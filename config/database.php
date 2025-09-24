@@ -564,6 +564,102 @@ class PostManager {
             return 0;
         }
     }
+    
+    // Obtenir les commentaires d'un post
+    public function getCommentsByPostId($postId) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return [];
+        }
+        
+        try {
+            $stmt = $conn->prepare("
+                SELECT c.*, u.username, u.avatar 
+                FROM comments c 
+                JOIN users u ON c.user_id = u.id 
+                WHERE c.post_id = ? 
+                ORDER BY c.created_at ASC
+            ");
+            $stmt->execute([$postId]);
+            $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formater les commentaires
+            $formattedComments = [];
+            foreach ($comments as $comment) {
+                $formattedComments[] = [
+                    'id' => $comment['id'],
+                    'content' => $comment['content'],
+                    'username' => $comment['username'],
+                    'avatar' => $comment['avatar'],
+                    'created_at' => $comment['created_at'],
+                    'likes' => $comment['likes']
+                ];
+            }
+            
+            return $formattedComments;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération commentaires: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    // Ajouter un commentaire à un post
+    public function addComment($postId, $userId, $content) {
+        // Validation
+        if (strlen(trim($content)) < 3) {
+            return ['success' => false, 'message' => 'Le commentaire doit contenir au moins 3 caractères'];
+        }
+        
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return ['success' => false, 'message' => 'Erreur de connexion à la base de données'];
+        }
+        
+        try {
+            // Vérifier que le post existe
+            $stmt = $conn->prepare("SELECT id FROM posts WHERE id = ?");
+            $stmt->execute([$postId]);
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'message' => 'Post non trouvé'];
+            }
+            
+            // Insérer le commentaire
+            $stmt = $conn->prepare("INSERT INTO comments (content, user_id, post_id, created_at) VALUES (?, ?, ?, NOW())");
+            $result = $stmt->execute([trim($content), $userId, $postId]);
+            
+            if ($result) {
+                return ['success' => true];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors de l\'ajout du commentaire'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur ajout commentaire: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de l\'ajout du commentaire'];
+        }
+    }
+    
+    // Obtenir le nombre de commentaires d'un post
+    public function getCommentsCount($postId) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return 0;
+        }
+        
+        try {
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM comments WHERE post_id = ?");
+            $stmt->execute([$postId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['count'];
+        } catch (PDOException $e) {
+            error_log("Erreur comptage commentaires: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
 
 // Classe utilitaire

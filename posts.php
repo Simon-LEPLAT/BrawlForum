@@ -4,6 +4,29 @@ require_once 'config/database.php';
 $currentUser = $userManager->getCurrentUser();
 $flashMessage = getFlashMessage();
 
+// Gestion de l'ajout de commentaires
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_comment'])) {
+    if (!$currentUser) {
+        setFlashMessage('Vous devez être connecté pour commenter.', 'error');
+    } else {
+        $postId = (int)($_POST['post_id'] ?? 0);
+        $content = $_POST['comment_content'] ?? '';
+        
+        if ($postId > 0 && !empty(trim($content))) {
+            $result = $postManager->addComment($postId, $currentUser['id'], $content);
+            if (!$result['success'] && isset($result['message'])) {
+                setFlashMessage($result['message'], 'error');
+            }
+        } else {
+            setFlashMessage('Veuillez saisir un commentaire valide.', 'error');
+        }
+    }
+    
+    // Redirection pour éviter la resoumission
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit;
+}
+
 // Gestion du filtrage
 $category = $_GET['category'] ?? 'all';
 $search = $_GET['search'] ?? '';
@@ -13,6 +36,11 @@ if ($category === 'all') {
     $posts = $postManager->getAllPosts($search);
 } else {
     $posts = $postManager->getPostsByCategory($category, $search);
+}
+
+// Ajouter le nombre de commentaires pour chaque post
+foreach ($posts as &$post) {
+    $post['comments_count'] = $postManager->getCommentsCount($post['id']);
 }
 
 $categories = [
@@ -224,6 +252,150 @@ $categories = [
             font-size: 1.2rem;
             padding: 50px;
         }
+        
+        /* Styles pour les commentaires */
+        .comments-toggle {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .comments-toggle:hover {
+            color: #ffd700 !important;
+            transform: scale(1.05);
+        }
+        
+        .comments-section {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .comments-section.expanded {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+        
+        .comment-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .comment-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b35, #ff4444);
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .comment-meta {
+            flex: 1;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 0.9rem;
+        }
+        
+        .comment-date {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+        }
+        
+        .comment-content {
+            color: white;
+            line-height: 1.5;
+            margin-left: 45px;
+        }
+        
+        .comment-form {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .comment-form h4 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .comment-textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            color: white;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 15px;
+        }
+        
+        .comment-textarea::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .comment-textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+        
+        .comment-submit {
+            background: linear-gradient(45deg, #ff6b35, #ff4444);
+            color: white;
+            border: 2px solid #000;
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .comment-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        
+        .no-comments {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-style: italic;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +499,7 @@ $categories = [
                         </div>
                         
                         <div class="post-stats">
-                            <div class="post-stat">
+                            <div class="post-stat comments-toggle" onclick="toggleComments(<?= $post['id'] ?>)">
                                 <i class="fas fa-comments"></i>
                                 <span><?= $post['comments_count'] ?? 0 ?> commentaires</span>
                             </div>
@@ -340,6 +512,60 @@ $categories = [
                                 <span><?= $post['likes'] ?? 0 ?> likes</span>
                             </div>
                         </div>
+                        
+                        <!-- Section des commentaires (cachée par défaut) -->
+                        <div class="comments-section" id="comments-<?= $post['id'] ?>">
+                            <div class="comments-list">
+                                <?php 
+                                $comments = $postManager->getCommentsByPostId($post['id']);
+                                if (empty($comments)): 
+                                ?>
+                                    <div class="no-comments">
+                                        <i class="fas fa-comment-slash"></i>
+                                        Aucun commentaire pour le moment. Soyez le premier à commenter !
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach ($comments as $comment): ?>
+                                        <div class="comment-item">
+                                            <div class="comment-header">
+                                                <div class="comment-avatar">
+                                                    <?= strtoupper(substr($comment['username'], 0, 1)) ?>
+                                                </div>
+                                                <div class="comment-meta">
+                                                    <div class="comment-author"><?= htmlspecialchars($comment['username']) ?></div>
+                                                    <div class="comment-date"><?= date('d/m/Y à H:i', strtotime($comment['created_at'])) ?></div>
+                                                </div>
+                                            </div>
+                                            <div class="comment-content">
+                                                <?= nl2br(htmlspecialchars($comment['content'])) ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <!-- Formulaire d'ajout de commentaire -->
+                            <?php if ($currentUser): ?>
+                                <div class="comment-form">
+                                    <h4><i class="fas fa-plus-circle"></i> Ajouter un commentaire</h4>
+                                    <form method="POST" action="">
+                                        <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
+                                        <textarea name="comment_content" class="comment-textarea" 
+                                                placeholder="Écrivez votre commentaire ici..." required></textarea>
+                                        <button type="submit" name="add_comment" class="comment-submit">
+                                            <i class="fas fa-paper-plane"></i> Publier le commentaire
+                                        </button>
+                                    </form>
+                                </div>
+                            <?php else: ?>
+                                <div class="comment-form">
+                                    <p style="color: rgba(255,255,255,0.7); text-align: center;">
+                                        <i class="fas fa-sign-in-alt"></i> 
+                                        <a href="login.php" style="color: #ffd700;">Connectez-vous</a> pour ajouter un commentaire.
+                                    </p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -347,5 +573,81 @@ $categories = [
     </div>
 
     <script src="assets/js/main.js"></script>
+    <script>
+        // Fonction pour basculer l'affichage des commentaires
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById('comments-' + postId);
+            
+            if (commentsSection.classList.contains('expanded')) {
+                // Fermer les commentaires
+                commentsSection.classList.remove('expanded');
+                commentsSection.style.display = 'none';
+            } else {
+                // Ouvrir les commentaires
+                commentsSection.style.display = 'block';
+                commentsSection.classList.add('expanded');
+                
+                // Scroll vers la section des commentaires
+                setTimeout(() => {
+                    commentsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }, 100);
+            }
+        }
+        
+        // Fermer les autres sections de commentaires quand on en ouvre une nouvelle
+        function closeOtherComments(currentPostId) {
+            const allCommentsSections = document.querySelectorAll('.comments-section');
+            allCommentsSections.forEach(section => {
+                if (section.id !== 'comments-' + currentPostId && section.classList.contains('expanded')) {
+                    section.classList.remove('expanded');
+                    section.style.display = 'none';
+                }
+            });
+        }
+        
+        // Améliorer la fonction toggleComments pour fermer les autres
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById('comments-' + postId);
+            
+            if (commentsSection.classList.contains('expanded')) {
+                // Fermer les commentaires
+                commentsSection.classList.remove('expanded');
+                commentsSection.style.display = 'none';
+            } else {
+                // Fermer les autres sections ouvertes
+                closeOtherComments(postId);
+                
+                // Ouvrir les commentaires
+                commentsSection.style.display = 'block';
+                commentsSection.classList.add('expanded');
+                
+                // Scroll vers la section des commentaires
+                setTimeout(() => {
+                    commentsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }, 100);
+            }
+        }
+        
+        // Animation d'apparition des posts au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const postCards = document.querySelectorAll('.post-card');
+            postCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
 </body>
 </html>
