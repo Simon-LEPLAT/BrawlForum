@@ -145,44 +145,8 @@ INSERT INTO `users` (`id`, `username`, `email`, `role`, `password`, `avatar`, `b
 (1, 'admin', 'admin@brawlforum.com', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'avatar1', '1998-01-01', 0, 1, '2025-09-24 08:58:26', '2025-09-24 09:58:05', 1, NULL),
 (2, 'K12', 'killian.orsal@gmail.com', 'admin', '$2y$10$hyC0Og7WRsW1B9fSqEnvPu.QmevLjvZ4XHFBq75uEwfHnzpWsZxcK', 'avatar2', '2004-01-12', 0, 1, '2025-09-24 09:11:55', '2025-09-24 13:04:36', 1, '2025-09-24 13:04:36');
 
--- --------------------------------------------------------
-
---
--- Structure de la table `user_sessions`
---
-
-DROP TABLE IF EXISTS `user_sessions`;
-CREATE TABLE IF NOT EXISTS `user_sessions` (
-  `id` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
-  `user_id` int NOT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `user_agent` text COLLATE utf8mb4_general_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `expires_at` timestamp NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_expires` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Contraintes pour les tables déchargées
---
-
---
--- Contraintes pour la table `comments`
---
-ALTER TABLE `comments`
-  ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `comments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Contraintes pour la table `posts`
---
-ALTER TABLE `posts`
-  ADD CONSTRAINT `fk_posts_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+-- Quelques posts d'exemple
+INSERT INTO posts (title, content, user_id, category_id) VALUES
+('Bienvenue sur BrawlForum !', 'Bienvenue dans notre communauté dédiée à Brawl Stars ! Ici vous pouvez partager vos stratégies, trouver des coéquipiers et discuter de tout ce qui concerne le jeu.', 1, 1),
+('Meilleures stratégies pour Gem Grab', 'Voici quelques conseils pour exceller en Gem Grab : contrôlez le centre, protégez le porteur de gemmes, et coordonnez-vous avec votre équipe.', 1, 1),
+('Recherche équipe compétitive', 'Je cherche des joueurs sérieux pour former une équipe compétitive. Niveau minimum : 20000 trophées.', 1, 2);

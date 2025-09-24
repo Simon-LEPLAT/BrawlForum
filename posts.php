@@ -241,7 +241,6 @@ $categories = [
         </div>
         
         <div class="nav-links">
-            <a href="#" class="nav-link">Filtrer</a>
             <?php if ($currentUser): ?>
                 <a href="profile.php" class="nav-link">Mon profil</a>
                 <a href="logout.php" class="nav-link">Déconnexion</a>

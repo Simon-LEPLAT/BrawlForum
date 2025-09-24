@@ -17,6 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $newUsername = Utils::sanitize($_POST['username'] ?? '');
     $newEmail = Utils::sanitize($_POST['email'] ?? '');
     $newAvatar = $_POST['avatar'] ?? '';
+    $currentPassword = $_POST['current_password'] ?? '';
+    $newPassword = $_POST['new_password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
     $csrf_token = $_POST['csrf_token'] ?? '';
     
     // Vérification du token CSRF
@@ -26,17 +29,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $error = 'Le nom d\'utilisateur et l\'email sont obligatoires.';
     } elseif (!filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
         $error = 'Adresse email invalide.';
+    } elseif (!empty($newPassword) && strlen($newPassword) < 6) {
+        $error = 'Le nouveau mot de passe doit contenir au moins 6 caractères.';
+    } elseif (!empty($newPassword) && $newPassword !== $confirmPassword) {
+        $error = 'Les mots de passe ne correspondent pas.';
+    } elseif (!empty($newPassword) && !$userManager->verifyCurrentPassword($user['id'], $currentPassword)) {
+        $error = 'Le mot de passe actuel est incorrect.';
     } else {
-        // Mettre à jour les informations dans la session (simulation)
-        $_SESSION['username'] = $newUsername;
-        $_SESSION['email'] = $newEmail;
-        if (!empty($newAvatar)) {
-            $_SESSION['avatar'] = $newAvatar;
-        }
+        // Mettre à jour le profil en base de données
+        $updateResult = $userManager->updateProfile(
+            $user['id'], 
+            $newUsername, 
+            $newEmail, 
+            $newAvatar, 
+            !empty($newPassword) ? $newPassword : null
+        );
         
-        $success = 'Profil mis à jour avec succès !';
-        // Recharger les données utilisateur
-        $user = $userManager->getCurrentUser();
+        if ($updateResult['success']) {
+            $success = $updateResult['message'];
+            // Recharger les données utilisateur
+            $user = $userManager->getCurrentUser();
+        } else {
+            $error = $updateResult['message'];
+        }
     }
 }
 
@@ -343,7 +358,6 @@ $csrf_token = Utils::generateCSRFToken();
         </div>
         
         <div class="nav-links">
-            <a href="#" class="nav-link">Filtrer</a>
             <a href="profile.php" class="nav-link active">Mon profil</a>
             <a href="logout.php" class="nav-link">Déconnexion</a>
             <span class="user-welcome">Bienvenue, <?= htmlspecialchars($user['username']) ?> !</span>
@@ -361,7 +375,7 @@ $csrf_token = Utils::generateCSRFToken();
         <!-- En-tête du profil -->
         <div class="profile-header fade-in">
             <div class="profile-avatar">
-                <?= strtoupper(substr($user['username'], 0, 1)) ?>
+                <img src="assets/img/<?= htmlspecialchars($user['avatar']) ?>.svg" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             </div>
             <h1 class="profile-username"><?= htmlspecialchars($user['username']) ?></h1>
             <p class="profile-email"><?= htmlspecialchars($user['email']) ?></p>
@@ -425,20 +439,51 @@ $csrf_token = Utils::generateCSRFToken();
                             <i class="fas fa-image"></i> Avatar
                         </label>
                         <div class="avatar-selection">
-                            <div class="avatar-option" data-avatar="avatar1" style="background: linear-gradient(45deg, #ff6b35, #ff4444);">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="avatar-option" data-avatar="avatar2" style="background: linear-gradient(45deg, #4CAF50, #45a049);">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="avatar-option" data-avatar="avatar3" style="background: linear-gradient(45deg, #2196F3, #1976D2);">
-                                <i class="fas fa-crown"></i>
-                            </div>
-                            <div class="avatar-option" data-avatar="avatar4" style="background: linear-gradient(45deg, #9C27B0, #7B1FA2);">
-                                <i class="fas fa-gem"></i>
-                            </div>
+                            <label class="avatar-option">
+                                <input type="radio" name="avatar" value="avatar1" <?= $user['avatar'] === 'avatar1' ? 'checked' : '' ?>>
+                                <img src="assets/img/avatar1.svg" alt="Shelly" class="avatar-img">
+                                <span class="avatar-name">Shelly</span>
+                            </label>
+                            <label class="avatar-option">
+                                <input type="radio" name="avatar" value="avatar2" <?= $user['avatar'] === 'avatar2' ? 'checked' : '' ?>>
+                                <img src="assets/img/avatar2.svg" alt="Colt" class="avatar-img">
+                                <span class="avatar-name">Colt</span>
+                            </label>
+                            <label class="avatar-option">
+                                <input type="radio" name="avatar" value="avatar3" <?= $user['avatar'] === 'avatar3' ? 'checked' : '' ?>>
+                                <img src="assets/img/avatar3.svg" alt="Nita" class="avatar-img">
+                                <span class="avatar-name">Nita</span>
+                            </label>
+                            <label class="avatar-option">
+                                <input type="radio" name="avatar" value="avatar4" <?= $user['avatar'] === 'avatar4' ? 'checked' : '' ?>>
+                                <img src="assets/img/avatar4.svg" alt="Bull" class="avatar-img">
+                                <span class="avatar-name">Bull</span>
+                            </label>
                         </div>
-                        <input type="hidden" name="avatar" id="selected-avatar" value="">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="current_password" class="form-label">
+                            <i class="fas fa-lock"></i> Mot de passe actuel (optionnel)
+                        </label>
+                        <input type="password" id="current_password" name="current_password" class="form-input" 
+                               placeholder="Laissez vide si vous ne voulez pas changer le mot de passe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="new_password" class="form-label">
+                            <i class="fas fa-key"></i> Nouveau mot de passe
+                        </label>
+                        <input type="password" id="new_password" name="new_password" class="form-input" 
+                               placeholder="Nouveau mot de passe (minimum 6 caractères)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">
+                            <i class="fas fa-check"></i> Confirmer le nouveau mot de passe
+                        </label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" 
+                               placeholder="Confirmez votre nouveau mot de passe">
                     </div>
                     
                     <button type="submit" name="update_profile" class="btn-update">
@@ -466,8 +511,8 @@ $csrf_token = Utils::generateCSRFToken();
                     <?php foreach ($filteredPosts as $post): ?>
                         <div class="post-item">
                             <div class="post-avatar">
-                                <?= strtoupper(substr($post['author'], 0, 1)) ?>
-                            </div>
+                            <img src="assets/img/<?= htmlspecialchars($post['avatar']) ?>.svg" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        </div>
                             <div class="post-content">
                                 <div class="post-title"><?= htmlspecialchars($post['title']) ?></div>
                                 <div class="post-text"><?= htmlspecialchars(substr($post['content'], 0, 100)) ?>...</div>
@@ -484,20 +529,5 @@ $csrf_token = Utils::generateCSRFToken();
     </div>
 
     <script src="assets/js/main.js"></script>
-    <script>
-        // Gestion de la sélection d'avatar
-        document.querySelectorAll('.avatar-option').forEach(option => {
-            option.addEventListener('click', function() {
-                // Retirer la sélection précédente
-                document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
-                
-                // Ajouter la sélection à l'option cliquée
-                this.classList.add('selected');
-                
-                // Mettre à jour le champ caché
-                document.getElementById('selected-avatar').value = this.dataset.avatar;
-            });
-        });
-    </script>
 </body>
 </html>

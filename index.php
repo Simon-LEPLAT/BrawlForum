@@ -38,7 +38,6 @@ $flashMessage = getFlashMessage();
         </div>
         
         <div class="nav-links">
-            <a href="#" class="nav-link">Filtrer</a>
             <?php if ($currentUser): ?>
                 <a href="profile.php" class="nav-link">Mon profil</a>
                 <?php if ($currentUser['role'] === 'admin'): ?>
