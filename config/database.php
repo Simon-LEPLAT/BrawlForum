@@ -272,198 +272,199 @@ class PostManager {
             return ['success' => false, 'message' => 'Catégorie invalide'];
         }
         
-        // Simulation de création de post
-        $postId = uniqid();
+        $conn = $this->db->getConnection();
         
-        // Sauvegarder dans la session pour simulation
-        if (!isset($_SESSION['user_posts'])) {
-            $_SESSION['user_posts'] = [];
+        if (!$conn) {
+            return ['success' => false, 'message' => 'Erreur de connexion à la base de données'];
         }
         
-        $_SESSION['user_posts'][] = [
-            'id' => $postId,
-            'title' => $title,
-            'content' => $content,
-            'category' => $category,
-            'author' => $_SESSION['username'],
-            'created_at' => date('Y-m-d H:i:s'),
-            'likes' => 0,
-            'comments' => 0
-        ];
-        
-        return ['success' => true, 'message' => 'Post créé avec succès !', 'post_id' => $postId];
+        try {
+            // Récupérer l'ID de la catégorie à partir de son slug
+            $stmt = $conn->prepare("SELECT id FROM categories WHERE slug = ?");
+            $stmt->execute([$category]);
+            $categoryData = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$categoryData) {
+                return ['success' => false, 'message' => 'Catégorie non trouvée'];
+            }
+            
+            $categoryId = $categoryData['id'];
+            
+            // Insérer le nouveau post dans la base de données
+            $stmt = $conn->prepare("INSERT INTO posts (title, content, user_id, category_id) VALUES (?, ?, ?, ?)");
+            $result = $stmt->execute([$title, $content, $userId, $categoryId]);
+            
+            if ($result) {
+                $postId = $conn->lastInsertId();
+                return ['success' => true, 'message' => 'Post créé avec succès !', 'post_id' => $postId];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors de la création du post'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur création post: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la création du post'];
+        }
     }
     
     // Obtenir les posts de l'utilisateur
     public function getUserPosts($userId) {
-        return $_SESSION['user_posts'] ?? [];
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return [];
+        }
+        
+        try {
+            $stmt = $conn->prepare("
+                SELECT p.*, c.slug as category_slug, c.name as category_name, u.username as author
+                FROM posts p 
+                JOIN categories c ON p.category_id = c.id 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.user_id = ? 
+                ORDER BY p.created_at DESC
+            ");
+            $stmt->execute([$userId]);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formater les posts pour la compatibilité
+            $formattedPosts = [];
+            foreach ($posts as $post) {
+                $formattedPosts[] = [
+                    'id' => $post['id'],
+                    'title' => $post['title'],
+                    'content' => $post['content'],
+                    'category' => $post['category_slug'],
+                    'author' => $post['author'],
+                    'created_at' => $post['created_at'],
+                    'likes' => $post['likes'],
+                    'comments' => 0 // TODO: compter les commentaires
+                ];
+            }
+            
+            return $formattedPosts;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération posts utilisateur: " . $e->getMessage());
+            return [];
+        }
     }
     
     // Obtenir les posts récents
     public function getRecentPosts($limit = 10) {
-        // Données simulées pour les discussions récentes
-        return [
-            [
-                'id' => 1,
-                'title' => 'Meilleure stratégie pour Gem Grab',
-                'author' => 'ProGamer',
-                'category' => 'strategies',
-                'replies' => 23,
-                'last_activity' => '2 min',
-                'avatar' => 'https://cdn.brawlstats.com/player-icons/28000001.png'
-            ],
-            [
-                'id' => 2,
-                'title' => 'Équipe parfaite pour Heist',
-                'author' => 'BrawlMaster',
-                'category' => 'team',
-                'replies' => 15,
-                'last_activity' => '5 min',
-                'avatar' => 'https://cdn.brawlstats.com/player-icons/28000002.png'
-            ],
-            [
-                'id' => 3,
-                'title' => 'Nouveau skin Spike disponible !',
-                'author' => 'SkinCollector',
-                'category' => 'skins',
-                'replies' => 42,
-                'last_activity' => '10 min',
-                'avatar' => 'https://cdn.brawlstats.com/player-icons/28000003.png'
-            ],
-            [
-                'id' => 4,
-                'title' => 'Event spécial ce week-end',
-                'author' => 'EventHunter',
-                'category' => 'events',
-                'replies' => 8,
-                'last_activity' => '15 min',
-                'avatar' => 'https://cdn.brawlstats.com/player-icons/28000004.png'
-            ],
-            [
-                'id' => 5,
-                'title' => 'Guide complet pour débutants',
-                'author' => 'Helper',
-                'category' => 'strategies',
-                'replies' => 67,
-                'last_activity' => '20 min',
-                'avatar' => 'https://cdn.brawlstats.com/player-icons/28000005.png'
-            ]
-        ];
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return [];
+        }
+        
+        try {
+            $stmt = $conn->prepare("
+                SELECT p.*, c.slug as category_slug, c.name as category_name, u.username as author, u.avatar
+                FROM posts p 
+                JOIN categories c ON p.category_id = c.id 
+                JOIN users u ON p.user_id = u.id 
+                ORDER BY p.created_at DESC 
+                LIMIT ?
+            ");
+            $stmt->execute([$limit]);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formater les posts pour la compatibilité
+            $formattedPosts = [];
+            foreach ($posts as $post) {
+                // Calculer le temps écoulé
+                $createdTime = new DateTime($post['created_at']);
+                $now = new DateTime();
+                $interval = $now->diff($createdTime);
+                
+                if ($interval->d > 0) {
+                    $lastActivity = $interval->d . ' jour' . ($interval->d > 1 ? 's' : '');
+                } elseif ($interval->h > 0) {
+                    $lastActivity = $interval->h . ' heure' . ($interval->h > 1 ? 's' : '');
+                } elseif ($interval->i > 0) {
+                    $lastActivity = $interval->i . ' min';
+                } else {
+                    $lastActivity = 'À l\'instant';
+                }
+                
+                $formattedPosts[] = [
+                    'id' => $post['id'],
+                    'title' => $post['title'],
+                    'content' => $post['content'],
+                    'author' => $post['author'],
+                    'category' => $post['category_slug'],
+                    'replies' => 0, // TODO: compter les commentaires
+                    'last_activity' => $lastActivity,
+                    'avatar' => 'assets/img/' . $post['avatar'] . '.svg',
+                    'views' => $post['views'],
+                    'likes' => $post['likes'],
+                    'created_at' => $post['created_at'],
+                    'comments_count' => 0 // TODO: compter les commentaires
+                ];
+            }
+            
+            return $formattedPosts;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération posts récents: " . $e->getMessage());
+            return [];
+        }
     }
     
     // Obtenir tous les posts avec recherche optionnelle
     public function getAllPosts($search = '') {
-        $allPosts = [
-            [
-                'id' => 1,
-                'title' => 'Meilleure stratégie pour Gem Grab',
-                'content' => 'Voici ma stratégie préférée pour dominer en Gem Grab. Il faut d\'abord contrôler le centre de la carte et maintenir la pression sur les gemmes...',
-                'author' => 'ProGamer',
-                'category' => 'strategies',
-                'created_at' => '2024-01-15 14:30:00',
-                'comments_count' => 23,
-                'views' => 156,
-                'likes' => 45
-            ],
-            [
-                'id' => 2,
-                'title' => 'Équipe parfaite pour Heist',
-                'content' => 'Après de nombreux tests, j\'ai trouvé la composition d\'équipe idéale pour Heist. Elle combine attaque et défense de manière optimale...',
-                'author' => 'BrawlMaster',
-                'category' => 'team',
-                'created_at' => '2024-01-15 13:45:00',
-                'comments_count' => 15,
-                'views' => 89,
-                'likes' => 32
-            ],
-            [
-                'id' => 3,
-                'title' => 'Nouveau skin Spike disponible !',
-                'content' => 'Le nouveau skin de Spike est absolument magnifique ! Les effets visuels sont incroyables et les animations sont fluides...',
-                'author' => 'SkinCollector',
-                'category' => 'skins',
-                'created_at' => '2024-01-15 12:20:00',
-                'comments_count' => 42,
-                'views' => 234,
-                'likes' => 78
-            ],
-            [
-                'id' => 4,
-                'title' => 'Event spécial ce week-end',
-                'content' => 'Un événement spécial aura lieu ce week-end avec des récompenses exclusives. Ne manquez pas cette opportunité...',
-                'author' => 'EventHunter',
-                'category' => 'events',
-                'created_at' => '2024-01-15 11:10:00',
-                'comments_count' => 8,
-                'views' => 67,
-                'likes' => 19
-            ],
-            [
-                'id' => 5,
-                'title' => 'Guide complet pour débutants',
-                'content' => 'Si vous débutez dans Brawl Stars, ce guide est fait pour vous ! Je vais vous expliquer les bases du jeu...',
-                'author' => 'Helper',
-                'category' => 'strategies',
-                'created_at' => '2024-01-15 10:00:00',
-                'comments_count' => 67,
-                'views' => 345,
-                'likes' => 123
-            ],
-            [
-                'id' => 6,
-                'title' => 'Analyse des nouveaux brawlers',
-                'content' => 'Les nouveaux brawlers apportent de nouvelles mécaniques intéressantes. Voici mon analyse détaillée...',
-                'author' => 'Analyst',
-                'category' => 'strategies',
-                'created_at' => '2024-01-14 16:30:00',
-                'comments_count' => 34,
-                'views' => 198,
-                'likes' => 56
-            ],
-            [
-                'id' => 7,
-                'title' => 'Meilleure composition pour Brawl Ball',
-                'content' => 'Après avoir testé de nombreuses compositions, voici celle qui fonctionne le mieux en Brawl Ball...',
-                'author' => 'TeamBuilder',
-                'category' => 'team',
-                'created_at' => '2024-01-14 15:15:00',
-                'comments_count' => 28,
-                'views' => 142,
-                'likes' => 41
-            ],
-            [
-                'id' => 8,
-                'title' => 'Collection de skins rares',
-                'content' => 'Voici ma collection de skins les plus rares du jeu. Certains ne sont plus disponibles...',
-                'author' => 'Collector',
-                'category' => 'skins',
-                'created_at' => '2024-01-14 14:00:00',
-                'comments_count' => 51,
-                'views' => 287,
-                'likes' => 89
-            ]
-        ];
+        $conn = $this->db->getConnection();
         
-        // Ajouter les posts de l'utilisateur s'ils existent
-        if (isset($_SESSION['user_posts'])) {
-            $allPosts = array_merge($allPosts, $_SESSION['user_posts']);
+        if (!$conn) {
+            return [];
         }
         
-        // Filtrer par recherche si fournie
-        if (!empty($search)) {
-            $allPosts = array_filter($allPosts, function($post) use ($search) {
-                return stripos($post['title'], $search) !== false || 
-                       stripos($post['content'], $search) !== false ||
-                       stripos($post['author'], $search) !== false;
-            });
+        try {
+            // Construire la requête avec recherche optionnelle
+            $sql = "
+                SELECT p.*, c.slug as category, c.name as category_name, u.username as author, u.avatar
+                FROM posts p 
+                JOIN categories c ON p.category_id = c.id 
+                JOIN users u ON p.user_id = u.id 
+            ";
+            
+            $params = [];
+            
+            if (!empty($search)) {
+                $sql .= " WHERE (p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)";
+                $searchTerm = '%' . $search . '%';
+                $params = [$searchTerm, $searchTerm, $searchTerm];
+            }
+            
+            $sql .= " ORDER BY p.created_at DESC";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formater les posts pour la compatibilité
+            $formattedPosts = [];
+            foreach ($posts as $post) {
+                $formattedPosts[] = [
+                    'id' => $post['id'],
+                    'title' => $post['title'],
+                    'content' => $post['content'],
+                    'author' => $post['author'],
+                    'category' => $post['category'],
+                    'created_at' => $post['created_at'],
+                    'comments_count' => 0, // TODO: compter les commentaires
+                    'views' => $post['views'],
+                    'likes' => $post['likes']
+                ];
+            }
+            
+            return $formattedPosts;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération tous les posts: " . $e->getMessage());
+            return [];
         }
-        
-        // Trier par date de création (plus récent en premier)
-        usort($allPosts, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-        
-        return $allPosts;
     }
     
     // Obtenir les posts par catégorie
