@@ -1,12 +1,14 @@
 <?php
+session_start();
 require_once 'config/database.php';
 
 $error = '';
 $success = '';
 
 // Rediriger si déjà connecté
-if ($userManager->isLoggedIn()) {
-    Utils::redirect('index.php');
+if (isset($_SESSION['user_id'])) {
+    header('Location: profile.php');
+    exit();
 }
 
 // Traitement du formulaire d'inscription
@@ -44,12 +46,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($terms != 1) {
         $error = 'Vous devez accepter les conditions d\'utilisation.';
     } else {
-        // Tentative d'inscription avec UserManager
-        if ($userManager->register($username, $email, $password, $avatar)) {
-            $success = 'Inscription réussie ! Bienvenue sur BrawlForum !';
-            Utils::redirect('index.php');
+        // Connexion à la base de données
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+        
+        if ($conn) {
+            try {
+                // Vérifier si l'utilisateur ou l'email existe déjà
+                $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+                $stmt->execute([$username, $email]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $error = 'Ce nom d\'utilisateur ou cette adresse email est déjà utilisé.';
+                } else {
+                    // Hasher le mot de passe
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    
+                    // Insérer le nouvel utilisateur
+                    $stmt = $conn->prepare("INSERT INTO users (username, email, password, avatar, birthdate, newsletter, terms_accepted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    
+                    if ($stmt->execute([$username, $email, $hashed_password, $avatar, $birthdate, $newsletter, $terms])) {
+                        $user_id = $conn->lastInsertId();
+                        
+                        // Connecter automatiquement l'utilisateur
+                        $_SESSION['user_id'] = $user_id;
+                        $_SESSION['username'] = $username;
+                        $_SESSION['avatar'] = $avatar;
+                        
+                        $success = 'Inscription réussie ! Bienvenue sur BrawlForum !';
+                        header('Location: index.php');
+                        exit();
+                    } else {
+                        $error = 'Erreur lors de l\'inscription. Veuillez réessayer.';
+                    }
+                }
+            } catch (PDOException $e) {
+                $error = 'Erreur de base de données. Veuillez réessayer plus tard.';
+                error_log("Erreur inscription: " . $e->getMessage());
+            }
         } else {
-            $error = 'Ce nom d\'utilisateur ou cette adresse email est déjà utilisé.';
+            $error = 'Impossible de se connecter à la base de données.';
         }
     }
 }
