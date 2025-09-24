@@ -185,23 +185,170 @@ class UserManager {
             return null;
         }
         
-        return [
-            'id' => $_SESSION['user_id'],
-            'username' => $_SESSION['username'],
-            'email' => $_SESSION['email'] ?? 'user@brawlforum.com',
-            'avatar' => 'https://cdn.brawlstats.com/player-icons/28000000.png',
-            'role' => $_SESSION['role'] ?? 'user',
-            'join_date' => date('Y-m-d', $_SESSION['login_time'] ?? time()),
-            'posts_count' => rand(10, 100),
-            'likes_received' => rand(50, 500),
-            'level' => rand(1, 50)
-        ];
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            // Fallback avec les données de session si pas de connexion DB
+            return [
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username'],
+                'email' => $_SESSION['email'] ?? 'user@brawlforum.com',
+                'avatar' => $_SESSION['avatar'] ?? 'avatar1',
+                'role' => $_SESSION['role'] ?? 'user',
+                'join_date' => date('Y-m-d', $_SESSION['login_time'] ?? time()),
+                'posts_count' => 0,
+                'likes_received' => 0,
+                'level' => 1
+            ];
+        }
+        
+        try {
+            // Récupérer les données utilisateur depuis la base de données
+            $stmt = $conn->prepare("
+                SELECT u.id, u.username, u.email, u.avatar, u.role, u.created_at,
+                       COUNT(DISTINCT p.id) as posts_count,
+                       COALESCE(SUM(p.likes), 0) as likes_received
+                FROM users u 
+                LEFT JOIN posts p ON u.id = p.user_id 
+                WHERE u.id = ? AND u.is_active = 1
+                GROUP BY u.id
+            ");
+            $stmt->execute([$_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($user) {
+                // Calculer le niveau basé sur les posts et likes
+                $totalScore = ($user['posts_count'] * 10) + ($user['likes_received'] * 2);
+                $level = max(1, min(50, floor($totalScore / 20) + 1));
+                
+                return [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'avatar' => $user['avatar'],
+                    'role' => $user['role'],
+                    'join_date' => date('Y-m-d', strtotime($user['created_at'])),
+                    'posts_count' => (int)$user['posts_count'],
+                    'likes_received' => (int)$user['likes_received'],
+                    'level' => $level
+                ];
+            }
+            
+            // Si l'utilisateur n'est pas trouvé en DB, utiliser les données de session
+            return [
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username'],
+                'email' => $_SESSION['email'] ?? 'user@brawlforum.com',
+                'avatar' => $_SESSION['avatar'] ?? 'avatar1',
+                'role' => $_SESSION['role'] ?? 'user',
+                'join_date' => date('Y-m-d', $_SESSION['login_time'] ?? time()),
+                'posts_count' => 0,
+                'likes_received' => 0,
+                'level' => 1
+            ];
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération utilisateur: " . $e->getMessage());
+            // Fallback avec les données de session en cas d'erreur
+            return [
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username'],
+                'email' => $_SESSION['email'] ?? 'user@brawlforum.com',
+                'avatar' => $_SESSION['avatar'] ?? 'avatar1',
+                'role' => $_SESSION['role'] ?? 'user',
+                'join_date' => date('Y-m-d', $_SESSION['login_time'] ?? time()),
+                'posts_count' => 0,
+                'likes_received' => 0,
+                'level' => 1
+            ];
+        }
     }
     
     // Déconnexion
     public function logout() {
         session_destroy();
         return true;
+    }
+    
+    // Mettre à jour le profil utilisateur
+    public function updateProfile($userId, $username, $email, $avatar = null, $newPassword = null) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            // Fallback : mettre à jour seulement la session
+            $_SESSION['username'] = $username;
+            $_SESSION['email'] = $email;
+            if ($avatar) {
+                $_SESSION['avatar'] = $avatar;
+            }
+            return ['success' => true, 'message' => 'Profil mis à jour (mode hors ligne)'];
+        }
+        
+        try {
+            // Vérifier si le nom d'utilisateur ou l'email existe déjà pour un autre utilisateur
+            $stmt = $conn->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ? AND is_active = 1");
+            $stmt->execute([$username, $email, $userId]);
+            
+            if ($stmt->rowCount() > 0) {
+                return ['success' => false, 'message' => 'Ce nom d\'utilisateur ou cet email est déjà utilisé'];
+            }
+            
+            // Préparer la requête de mise à jour
+            if ($newPassword) {
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                $sql = "UPDATE users SET username = ?, email = ?, avatar = ?, password = ? WHERE id = ?";
+                $params = [$username, $email, $avatar, $hashedPassword, $userId];
+            } else {
+                $sql = "UPDATE users SET username = ?, email = ?, avatar = ? WHERE id = ?";
+                $params = [$username, $email, $avatar, $userId];
+            }
+            
+            $stmt = $conn->prepare($sql);
+            
+            if ($stmt->execute($params)) {
+                // Mettre à jour la session
+                $_SESSION['username'] = $username;
+                $_SESSION['email'] = $email;
+                if ($avatar) {
+                    $_SESSION['avatar'] = $avatar;
+                }
+                
+                $message = $newPassword ? 'Profil et mot de passe mis à jour avec succès !' : 'Profil mis à jour avec succès !';
+                return ['success' => true, 'message' => $message];
+            }
+            
+            return ['success' => false, 'message' => 'Erreur lors de la mise à jour du profil'];
+            
+        } catch (PDOException $e) {
+            error_log("Erreur mise à jour profil: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la mise à jour du profil'];
+        }
+    }
+    
+    // Vérifier le mot de passe actuel de l'utilisateur
+    public function verifyCurrentPassword($userId, $currentPassword) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            // En mode hors ligne, on accepte n'importe quel mot de passe pour la démo
+            return true;
+        }
+        
+        try {
+            $stmt = $conn->prepare("SELECT password FROM users WHERE id = ? AND is_active = 1");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($user && password_verify($currentPassword, $user['password'])) {
+                return true;
+            }
+            
+            return false;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur vérification mot de passe: " . $e->getMessage());
+            return false;
+        }
     }
     
     // Récupérer tous les utilisateurs (pour l'administration)
@@ -321,7 +468,7 @@ class PostManager {
         
         try {
             $stmt = $conn->prepare("
-                SELECT p.*, c.slug as category_slug, c.name as category_name, u.username as author
+                SELECT p.*, c.slug as category_slug, c.name as category_name, u.username as author, u.avatar
                 FROM posts p 
                 JOIN categories c ON p.category_id = c.id 
                 JOIN users u ON p.user_id = u.id 
@@ -340,6 +487,7 @@ class PostManager {
                     'content' => $post['content'],
                     'category' => $post['category_slug'],
                     'author' => $post['author'],
+                    'avatar' => $post['avatar'],
                     'created_at' => $post['created_at'],
                     'likes' => $post['likes'],
                     'comments' => 0 // TODO: compter les commentaires
