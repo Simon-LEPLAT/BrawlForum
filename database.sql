@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
+    role ENUM('user', 'admin') DEFAULT 'user',
     password VARCHAR(255) NOT NULL,
     avatar VARCHAR(20) DEFAULT 'avatar1',
     birthdate DATE NOT NULL,
@@ -20,7 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP NULL,
     INDEX idx_username (username),
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_role (role)
 );
 
 -- Table des catégories
@@ -93,8 +95,8 @@ INSERT INTO categories (name, slug, description, icon, color) VALUES
 ('Événements', 'events', 'Informations sur les événements et tournois', 'fas fa-calendar-alt', '#2196f3');
 
 -- Création d'un utilisateur admin par défaut (mot de passe: admin123)
-INSERT INTO users (username, email, password, avatar, birthdate, newsletter, terms_accepted) VALUES
-('admin', 'admin@brawlforum.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'avatar1', '1998-01-01', FALSE, TRUE);
+INSERT INTO users (username, email, role, password, avatar, birthdate, newsletter, terms_accepted) VALUES
+('admin', 'admin@brawlforum.com', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'avatar1', '1998-01-01', FALSE, TRUE);
 
 -- Quelques posts d'exemple
 INSERT INTO posts (title, content, user_id, category_id) VALUES

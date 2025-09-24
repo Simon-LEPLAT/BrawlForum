@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config/database.php';
 
 // Obtenir les données dynamiques
@@ -40,6 +41,9 @@ $flashMessage = getFlashMessage();
             <a href="#" class="nav-link">Filtrer</a>
             <?php if ($currentUser): ?>
                 <a href="profile.php" class="nav-link">Mon profil</a>
+                <?php if ($currentUser['role'] === 'admin'): ?>
+                    <a href="admin.php" class="nav-link">Administration</a>
+                <?php endif; ?>
                 <a href="logout.php" class="nav-link">Déconnexion</a>
                 <span class="user-welcome">Bienvenue, <?= htmlspecialchars($currentUser['username']) ?> !</span>
             <?php else: ?>
@@ -57,15 +61,15 @@ $flashMessage = getFlashMessage();
     <?php endif; ?>
 
     <div class="container">
-        <!-- Image Shelly -->
-        <div class="shelly-section fade-in">
+        <!-- HÉRO SHELLY -->
+        <div class="shelly-hero">
             <img src="assets/img/shelly.png" alt="Shelly" class="shelly-image">
         </div>
         
-        <!-- Section Catégories -->
-        <div class="panel fade-in">
-            <h2 class="brawl-title" style="font-size: 2.5rem; text-align: center; margin-bottom: 30px; color: #ffd700;">
-                Catégories
+        <!-- Panneau catégories -->
+        <div class="panel home-categories fade-in">
+            <h2 class="brawl-title" style="font-size: 3.5rem; text-align: center; margin-bottom: 40px; color: #ffd700; text-shadow: 4px 4px 0px #000;">
+                CATÉGORIES
             </h2>
             
             <div class="categories-grid">

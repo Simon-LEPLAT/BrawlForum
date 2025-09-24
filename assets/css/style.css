@@ -187,72 +187,65 @@ body:not(.login-page):not(.register-page) {
     box-shadow: 0 8px 16px rgba(0,0,0,0.3);
 }
 
-/* Image Shelly */
-.shelly-section {
-    text-align: center;
-    margin: 0 auto 40px auto;
-    padding: 30px 0;
+/* --- HÉRO ACCUEIL (image centrée au-dessus du contenu) --- */
+.shelly-hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+
     display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
+    justify-content: center;       /* <-- centrage */
+    align-items: flex-end;
+
+    position: relative;
+    z-index: 2;
+    margin-bottom: -100px;         /* chevauche le panneau en dessous */
 }
 
-.shelly-image {
-    max-width: 400px;
-    width: 100%;
+.shelly-hero .shelly-image {
+    width: 620px;                  /* <-- image agrandie */
+    max-width: 70vw;
     height: auto;
-    filter: drop-shadow(0 12px 24px rgba(0,0,0,0.6));
-    transition: all 0.3s ease;
-    border-radius: 20px;
-    object-fit: contain;
+    border-radius: 0;
+    filter: drop-shadow(0 25px 35px rgba(0,0,0,0.5));
 }
 
-.shelly-image:hover {
-    transform: scale(1.02) translateY(-5px);
-    filter: drop-shadow(0 15px 30px rgba(0,0,0,0.8));
+/* Le panneau sous l'image */
+.home-categories {
+    position: relative;
+    z-index: 1;
+    padding-top: 120px;            /* espace suffisant pour ne pas que le contenu remonte */
 }
 
+/* Responsive */
+@media (max-width: 992px) {
+    .shelly-hero .shelly-image { width: 480px; }
+    .shelly-hero { margin-bottom: -80px; }
+}
 @media (max-width: 768px) {
-    .shelly-image {
-        max-width: 320px;
-    }
-    
-    .shelly-section {
-        padding: 25px 0;
-        margin-bottom: 35px;
-    }
-}
-
-@media (max-width: 480px) {
-    .shelly-image {
-        max-width: 280px;
-    }
-    
-    .shelly-section {
-        margin-bottom: 30px;
-        padding: 20px 0;
-    }
+    .shelly-hero { margin-bottom: 20px; }
+    .shelly-hero .shelly-image { width: 360px; max-width: 80vw; }
 }
 
 /* Catégories */
 .categories-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin: 30px 0;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin: 50px 0;
 }
 
 .category-card {
     background: linear-gradient(135deg, #2a5298, #1e3c72);
-    border-radius: 20px;
-    padding: 30px;
+    border-radius: 25px;
+    padding: 50px 30px;
     text-align: center;
-    border: 4px solid #000;
+    border: 5px solid #000;
     cursor: pointer;
     transition: transform 0.3s, box-shadow 0.3s;
     position: relative;
     overflow: hidden;
+    min-height: 200px;
 }
 
 .category-card:hover {
@@ -277,16 +270,19 @@ body:not(.login-page):not(.register-page) {
 }
 
 .category-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
+    font-size: 4.5rem;
+    margin-bottom: 20px;
     display: block;
+    color: #ffd700;
+    text-shadow: 3px 3px 0px #000;
 }
 
 .category-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 900;
     text-transform: uppercase;
-    text-shadow: 2px 2px 0px #000;
+    text-shadow: 3px 3px 0px #000;
+    color: #ffffff;
 }
 
 /* Formulaires */

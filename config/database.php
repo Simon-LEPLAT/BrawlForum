@@ -99,7 +99,7 @@ class UserManager {
         
         try {
             // Rechercher l'utilisateur par nom d'utilisateur ou email
-            $stmt = $conn->prepare("SELECT id, username, email, password, avatar FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
+            $stmt = $conn->prepare("SELECT id, username, email, password, avatar, role FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
             $stmt->execute([$username, $username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -109,6 +109,7 @@ class UserManager {
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['avatar'] = $user['avatar'];
+                $_SESSION['role'] = $user['role'] ?? 'user';
                 $_SESSION['logged_in'] = true;
                 $_SESSION['login_time'] = time();
                 
@@ -189,6 +190,7 @@ class UserManager {
             'username' => $_SESSION['username'],
             'email' => $_SESSION['email'] ?? 'user@brawlforum.com',
             'avatar' => 'https://cdn.brawlstats.com/player-icons/28000000.png',
+            'role' => $_SESSION['role'] ?? 'user',
             'join_date' => date('Y-m-d', $_SESSION['login_time'] ?? time()),
             'posts_count' => rand(10, 100),
             'likes_received' => rand(50, 500),

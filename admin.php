@@ -4,9 +4,9 @@ require_once 'config/database.php';
 // Vérifier si l'utilisateur est connecté
 requireLogin();
 
-// Vérifier si l'utilisateur est admin (pour l'instant, on vérifie si c'est l'utilisateur 'admin')
+// Vérifier si l'utilisateur est admin
 $currentUser = $userManager->getCurrentUser();
-if ($currentUser['username'] !== 'admin') {
+if (!isset($currentUser['role']) || $currentUser['role'] !== 'admin') {
     Utils::redirect('index.php');
 }
 
