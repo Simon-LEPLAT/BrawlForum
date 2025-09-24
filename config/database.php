@@ -238,8 +238,12 @@ class UserManager {
         }
         
         try {
-            // Marquer l'utilisateur comme inactif plutôt que de le supprimer
-            $stmt = $conn->prepare("UPDATE users SET is_active = 0 WHERE id = ? AND id != 1"); // Protéger l'admin principal
+            // Supprimer complètement l'utilisateur de la base de données
+            // Les contraintes ON DELETE CASCADE supprimeront automatiquement :
+            // - Tous les posts de l'utilisateur
+            // - Tous les commentaires de l'utilisateur
+            // - Toutes les sessions de l'utilisateur
+            $stmt = $conn->prepare("DELETE FROM users WHERE id = ? AND id != 1"); // Protéger l'admin principal
             return $stmt->execute([$userId]);
         } catch (PDOException $e) {
             error_log("Erreur suppression utilisateur: " . $e->getMessage());
