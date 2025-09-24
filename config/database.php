@@ -250,6 +250,25 @@ class UserManager {
             return false;
         }
     }
+    
+    // Obtenir le nombre total d'utilisateurs actifs
+    public function getTotalUsers() {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return 0; // Retourner 0 si pas de connexion
+        }
+        
+        try {
+            $stmt = $conn->prepare("SELECT COUNT(*) as total FROM users WHERE is_active = 1");
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['total'];
+        } catch (PDOException $e) {
+            error_log("Erreur comptage utilisateurs: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
 
 // Classe de gestion des posts
@@ -491,10 +510,58 @@ class PostManager {
         try {
             // Supprimer le post et ses commentaires associés
             $stmt = $conn->prepare("DELETE FROM posts WHERE id = ?");
-            return $stmt->execute([$postId]);
+            $result = $stmt->execute([$postId]);
+            
+            // Si la suppression a réussi, incrémenter le compteur de posts supprimés
+            if ($result) {
+                $updateStmt = $conn->prepare("UPDATE admin_stats SET stat_value = stat_value + 1, updated_at = CURRENT_TIMESTAMP WHERE stat_name = 'deleted_posts'");
+                $updateStmt->execute();
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Erreur suppression post: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    // Obtenir le nombre total de posts publiés
+    public function getTotalPosts() {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return 0; // Retourner 0 si pas de connexion
+        }
+        
+        try {
+            $stmt = $conn->prepare("SELECT COUNT(*) as total FROM posts");
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['total'];
+        } catch (PDOException $e) {
+            error_log("Erreur comptage posts: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    // Obtenir le nombre de posts supprimés depuis la table admin_stats
+    public function getDeletedPosts() {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return 0; // Retourner 0 si pas de connexion
+        }
+        
+        try {
+            // Lire la valeur depuis la table admin_stats
+            $stmt = $conn->prepare("SELECT stat_value FROM admin_stats WHERE stat_name = 'deleted_posts'");
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ? (int)$result['stat_value'] : 0;
+        } catch (PDOException $e) {
+            error_log("Erreur lecture statistiques posts supprimés: " . $e->getMessage());
+            return 0;
         }
     }
 }

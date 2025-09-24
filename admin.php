@@ -49,11 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les statistiques
+// Récupérer les statistiques réelles de la base de données
 $stats = [
-    'total_users' => 2314,
-    'total_posts' => 6540,
-    'deleted_posts' => 127
+    'total_users' => $userManager->getTotalUsers(),
+    'total_posts' => $postManager->getTotalPosts(),
+    'deleted_posts' => $postManager->getDeletedPosts()
 ];
 
 // Récupérer tous les utilisateurs
