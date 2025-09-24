@@ -9,6 +9,11 @@ if ($userManager->isLoggedIn()) {
     Utils::redirect('index.php');
 }
 
+if (!isset($csrf_token)) {
+    $csrf_token = bin2hex(random_bytes(32)); // génère un token sécurisé
+}
+
+
 // Traitement du formulaire de connexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');

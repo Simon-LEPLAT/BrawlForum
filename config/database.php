@@ -201,6 +201,49 @@ class UserManager {
         session_destroy();
         return true;
     }
+    
+    // Récupérer tous les utilisateurs (pour l'administration)
+    public function getAllUsers() {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            // Retourner des données fictives si pas de connexion
+            return [
+                ['id' => 1, 'username' => 'admin', 'email' => 'admin@brawlforum.com', 'created_at' => '2023-01-01 00:00:00'],
+                ['id' => 2, 'username' => 'MaxPower', 'email' => 'maxpower@email.com', 'created_at' => '2023-02-12 00:00:00'],
+                ['id' => 3, 'username' => 'StarPlayer', 'email' => 'starplayer@email.com', 'created_at' => '2022-10-02 00:00:00'],
+                ['id' => 4, 'username' => 'Brawler33', 'email' => 'brawler33@email.com', 'created_at' => '2022-05-21 00:00:00'],
+                ['id' => 5, 'username' => 'NinjaX', 'email' => 'ninjaX@email.com', 'created_at' => '2021-12-08 00:00:00']
+            ];
+        }
+        
+        try {
+            $stmt = $conn->prepare("SELECT id, username, email, created_at FROM users WHERE is_active = 1 ORDER BY created_at DESC");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur récupération utilisateurs: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    // Supprimer un utilisateur (pour l'administration)
+    public function deleteUser($userId) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return true; // Simulation de succès
+        }
+        
+        try {
+            // Marquer l'utilisateur comme inactif plutôt que de le supprimer
+            $stmt = $conn->prepare("UPDATE users SET is_active = 0 WHERE id = ? AND id != 1"); // Protéger l'admin principal
+            return $stmt->execute([$userId]);
+        } catch (PDOException $e) {
+            error_log("Erreur suppression utilisateur: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 
 // Classe de gestion des posts
@@ -428,6 +471,24 @@ class PostManager {
         return array_filter($allPosts, function($post) use ($category) {
             return $post['category'] === $category;
         });
+    }
+    
+    // Supprimer un post (pour l'administration)
+    public function deletePost($postId) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return true; // Simulation de succès
+        }
+        
+        try {
+            // Supprimer le post et ses commentaires associés
+            $stmt = $conn->prepare("DELETE FROM posts WHERE id = ?");
+            return $stmt->execute([$postId]);
+        } catch (PDOException $e) {
+            error_log("Erreur suppression post: " . $e->getMessage());
+            return false;
+        }
     }
 }
 

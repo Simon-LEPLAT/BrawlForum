@@ -11,6 +11,11 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
+if (!isset($csrf_token)) {
+    $csrf_token = bin2hex(random_bytes(32)); // génère un token sécurisé
+}
+
+
 // Traitement du formulaire d'inscription
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
