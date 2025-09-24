@@ -297,7 +297,6 @@ $csrf_token = Utils::generateCSRFToken();
         </div>
         
         <div class="nav-links">
-            <a href="#" class="nav-link">Filtrer</a>
             <a href="profile.php" class="nav-link">Mon profil</a>
             <a href="logout.php" class="nav-link">Déconnexion</a>
         </div>
