@@ -6,35 +6,53 @@ $success = '';
 
 // Rediriger si déjà connecté
 if ($userManager->isLoggedIn()) {
-    Utils::redirect('profile.php');
+    Utils::redirect('index.php');
 }
 
+// Traitement du formulaire d'inscription
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = Utils::sanitize($_POST['username'] ?? '');
-    $email = Utils::sanitize($_POST['email'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-    $csrf_token = $_POST['csrf_token'] ?? '';
+    $birthdate = $_POST['birthdate'] ?? '';
+    $avatar = $_POST['avatar'] ?? 'avatar1';
+    $newsletter = isset($_POST['newsletter']) ? 1 : 0;
+    $terms = isset($_POST['terms']) && $_POST['terms'] === '1' ? 1 : 0;
     
-    // Vérification du token CSRF
-    if (!Utils::verifyCSRFToken($csrf_token)) {
-        $error = 'Token de sécurité invalide.';
-    } elseif (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
-        $error = 'Tous les champs sont obligatoires.';
+    // Calculer l'âge à partir de la date de naissance
+    $age = 0;
+    if (!empty($birthdate)) {
+        $birth = new DateTime($birthdate);
+        $today = new DateTime();
+        $age = $today->diff($birth)->y;
+    }
+    
+    // Validation des données
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password) || empty($birthdate)) {
+        $error = 'Tous les champs obligatoires doivent être remplis.';
+    } elseif (strlen($username) < 3 || strlen($username) > 50) {
+        $error = 'Le nom d\'utilisateur doit contenir entre 3 et 50 caractères.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'L\'adresse email n\'est pas valide.';
+    } elseif (strlen($password) < 6) {
+        $error = 'Le mot de passe doit contenir au moins 6 caractères.';
     } elseif ($password !== $confirm_password) {
         $error = 'Les mots de passe ne correspondent pas.';
+    } elseif ($age < 13 || $age > 120) {
+        $error = 'L\'âge doit être compris entre 13 et 120 ans.';
+    } elseif ($terms != 1) {
+        $error = 'Vous devez accepter les conditions d\'utilisation.';
     } else {
-        $result = $userManager->register($username, $email, $password);
-        if ($result['success']) {
-            setFlashMessage($result['message'], 'success');
-            Utils::redirect('profile.php');
+        // Tentative d'inscription avec UserManager
+        if ($userManager->register($username, $email, $password, $avatar)) {
+            $success = 'Inscription réussie ! Bienvenue sur BrawlForum !';
+            Utils::redirect('index.php');
         } else {
-            $error = $result['message'];
+            $error = 'Ce nom d\'utilisateur ou cette adresse email est déjà utilisé.';
         }
     }
 }
-
-$csrf_token = Utils::generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -131,7 +149,6 @@ $csrf_token = Utils::generateCSRFToken();
                            required
                            max="<?= date('Y-m-d', strtotime('-13 years')) ?>">
                 </div>
-                <small class="form-help">Vous devez avoir au moins 13 ans</small>
             </div>
             
             <div class="form-group">
@@ -162,9 +179,9 @@ $csrf_token = Utils::generateCSRFToken();
             
             <div class="form-group checkbox-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" name="accept_terms" required>
+                    <input type="checkbox" name="terms" value="1" required>
                     <span class="checkmark"></span>
-                    J'accepte les <a href="#" class="terms-link">conditions d'utilisation</a> et la <a href="#" class="privacy-link">politique de confidentialité</a>
+                    J'accepte les <a href="terms.php" class="terms-link" target="_blank"> conditions d'utilisation </a> et la <a href="privacy.php" class="privacy-link" target="_blank">politique de confidentialité</a>
                 </label>
             </div>
             

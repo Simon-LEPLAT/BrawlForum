@@ -2,31 +2,31 @@
 require_once 'config/database.php';
 
 $error = '';
+$success = '';
 
 // Rediriger si déjà connecté
 if ($userManager->isLoggedIn()) {
-    Utils::redirect('profile.php');
+    Utils::redirect('index.php');
 }
 
+// Traitement du formulaire de connexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = Utils::sanitize($_POST['username'] ?? '');
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    $csrf_token = $_POST['csrf_token'] ?? '';
     
-    // Vérification du token CSRF
-    if (!Utils::verifyCSRFToken($csrf_token)) {
-        $error = 'Token de sécurité invalide.';
-    } elseif (empty($username) || empty($password)) {
+    // Validation des données
+    if (empty($username) || empty($password)) {
         $error = 'Veuillez remplir tous les champs.';
-    } elseif ($userManager->authenticate($username, $password)) {
-        setFlashMessage('Connexion réussie ! Bienvenue ' . $username, 'success');
-        Utils::redirect('profile.php');
     } else {
-        $error = 'Nom d\'utilisateur ou mot de passe incorrect.';
+        // Tentative de connexion avec UserManager
+        if ($userManager->authenticate($username, $password)) {
+            $success = 'Connexion réussie ! Bienvenue ' . $username;
+            Utils::redirect('index.php');
+        } else {
+            $error = 'Nom d\'utilisateur ou mot de passe incorrect.';
+        }
     }
 }
-
-$csrf_token = Utils::generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

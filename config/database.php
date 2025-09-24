@@ -1,11 +1,41 @@
 <?php
 // ===== CONFIGURATION BASE DE DONNÉES - BRAWL FORUM =====
 
-// Configuration de la base de données
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'brawl_forum');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Fonction pour charger le fichier .env
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return false;
+    }
+    
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Ignorer les commentaires
+        }
+        
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        
+        if (!array_key_exists($name, $_ENV)) {
+            $_ENV[$name] = $value;
+        }
+        if (!getenv($name)) {
+            putenv(sprintf('%s=%s', $name, $value));
+        }
+    }
+    return true;
+}
+
+// Charger le fichier .env
+$envPath = dirname(__DIR__) . '/.env';
+loadEnv($envPath);
+
+// Configuration de la base de données depuis les variables d'environnement
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+define('DB_NAME', $_ENV['DB_NAME'] ?? 'brawlforum');
+define('DB_USER', $_ENV['DB_USER'] ?? 'root');
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Configuration des sessions (seulement si aucune session n'est active)
@@ -61,48 +91,86 @@ class UserManager {
     
     // Authentification utilisateur
     public function authenticate($username, $password) {
-        // Simulation d'authentification (à remplacer par une vraie vérification)
-        $validUsers = [
-            'admin' => 'admin123',
-            'player1' => 'password123',
-            'brawler' => 'brawl2024',
-            'gamer' => 'gaming123'
-        ];
+        $conn = $this->db->getConnection();
         
-        if (isset($validUsers[$username]) && $validUsers[$username] === $password) {
-            $_SESSION['user_id'] = uniqid();
-            $_SESSION['username'] = $username;
-            $_SESSION['logged_in'] = true;
-            $_SESSION['login_time'] = time();
-            return true;
+        if (!$conn) {
+            return false;
         }
         
-        return false;
+        try {
+            // Rechercher l'utilisateur par nom d'utilisateur ou email
+            $stmt = $conn->prepare("SELECT id, username, email, password, avatar FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
+            $stmt->execute([$username, $username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($user && password_verify($password, $user['password'])) {
+                // Connexion réussie - stocker les informations en session
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['avatar'] = $user['avatar'];
+                $_SESSION['logged_in'] = true;
+                $_SESSION['login_time'] = time();
+                
+                // Mettre à jour la dernière connexion
+                $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+                $updateStmt->execute([$user['id']]);
+                
+                return true;
+            }
+            
+            return false;
+        } catch (PDOException $e) {
+            error_log("Erreur authentification: " . $e->getMessage());
+            return false;
+        }
     }
     
     // Inscription utilisateur
-    public function register($username, $email, $password) {
-        // Validation basique
-        if (strlen($username) < 3) {
-            return ['success' => false, 'message' => 'Le nom d\'utilisateur doit contenir au moins 3 caractères'];
+    public function register($username, $email, $password, $avatar = null) {
+        $conn = $this->db->getConnection();
+        
+        if (!$conn) {
+            return false;
         }
         
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'message' => 'Adresse email invalide'];
+        try {
+            // Vérifier si l'utilisateur ou l'email existe déjà
+            $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+            $stmt->execute([$username, $email]);
+            
+            if ($stmt->rowCount() > 0) {
+                return false; // Utilisateur déjà existant
+            }
+            
+            // Hasher le mot de passe
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Utiliser l'avatar fourni ou un avatar par défaut
+            $userAvatar = $avatar ?: Utils::getDefaultAvatar($username);
+            
+            // Insérer le nouvel utilisateur
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password, avatar, created_at, is_active) VALUES (?, ?, ?, ?, NOW(), 1)");
+            
+            if ($stmt->execute([$username, $email, $hashedPassword, $userAvatar])) {
+                $userId = $conn->lastInsertId();
+                
+                // Connecter automatiquement l'utilisateur
+                $_SESSION['user_id'] = $userId;
+                $_SESSION['username'] = $username;
+                $_SESSION['email'] = $email;
+                $_SESSION['avatar'] = $userAvatar;
+                $_SESSION['logged_in'] = true;
+                $_SESSION['login_time'] = time();
+                
+                return true;
+            }
+            
+            return false;
+        } catch (PDOException $e) {
+            error_log("Erreur inscription: " . $e->getMessage());
+            return false;
         }
-        
-        if (strlen($password) < 6) {
-            return ['success' => false, 'message' => 'Le mot de passe doit contenir au moins 6 caractères'];
-        }
-        
-        // Simulation d'inscription réussie
-        $_SESSION['user_id'] = uniqid();
-        $_SESSION['username'] = $username;
-        $_SESSION['email'] = $email;
-        $_SESSION['logged_in'] = true;
-        $_SESSION['login_time'] = time();
-        
-        return ['success' => true, 'message' => 'Inscription réussie !'];
     }
     
     // Vérifier si l'utilisateur est connecté
@@ -237,6 +305,130 @@ class PostManager {
             ]
         ];
     }
+    
+    // Obtenir tous les posts avec recherche optionnelle
+    public function getAllPosts($search = '') {
+        $allPosts = [
+            [
+                'id' => 1,
+                'title' => 'Meilleure stratégie pour Gem Grab',
+                'content' => 'Voici ma stratégie préférée pour dominer en Gem Grab. Il faut d\'abord contrôler le centre de la carte et maintenir la pression sur les gemmes...',
+                'author' => 'ProGamer',
+                'category' => 'strategies',
+                'created_at' => '2024-01-15 14:30:00',
+                'comments_count' => 23,
+                'views' => 156,
+                'likes' => 45
+            ],
+            [
+                'id' => 2,
+                'title' => 'Équipe parfaite pour Heist',
+                'content' => 'Après de nombreux tests, j\'ai trouvé la composition d\'équipe idéale pour Heist. Elle combine attaque et défense de manière optimale...',
+                'author' => 'BrawlMaster',
+                'category' => 'team',
+                'created_at' => '2024-01-15 13:45:00',
+                'comments_count' => 15,
+                'views' => 89,
+                'likes' => 32
+            ],
+            [
+                'id' => 3,
+                'title' => 'Nouveau skin Spike disponible !',
+                'content' => 'Le nouveau skin de Spike est absolument magnifique ! Les effets visuels sont incroyables et les animations sont fluides...',
+                'author' => 'SkinCollector',
+                'category' => 'skins',
+                'created_at' => '2024-01-15 12:20:00',
+                'comments_count' => 42,
+                'views' => 234,
+                'likes' => 78
+            ],
+            [
+                'id' => 4,
+                'title' => 'Event spécial ce week-end',
+                'content' => 'Un événement spécial aura lieu ce week-end avec des récompenses exclusives. Ne manquez pas cette opportunité...',
+                'author' => 'EventHunter',
+                'category' => 'events',
+                'created_at' => '2024-01-15 11:10:00',
+                'comments_count' => 8,
+                'views' => 67,
+                'likes' => 19
+            ],
+            [
+                'id' => 5,
+                'title' => 'Guide complet pour débutants',
+                'content' => 'Si vous débutez dans Brawl Stars, ce guide est fait pour vous ! Je vais vous expliquer les bases du jeu...',
+                'author' => 'Helper',
+                'category' => 'strategies',
+                'created_at' => '2024-01-15 10:00:00',
+                'comments_count' => 67,
+                'views' => 345,
+                'likes' => 123
+            ],
+            [
+                'id' => 6,
+                'title' => 'Analyse des nouveaux brawlers',
+                'content' => 'Les nouveaux brawlers apportent de nouvelles mécaniques intéressantes. Voici mon analyse détaillée...',
+                'author' => 'Analyst',
+                'category' => 'strategies',
+                'created_at' => '2024-01-14 16:30:00',
+                'comments_count' => 34,
+                'views' => 198,
+                'likes' => 56
+            ],
+            [
+                'id' => 7,
+                'title' => 'Meilleure composition pour Brawl Ball',
+                'content' => 'Après avoir testé de nombreuses compositions, voici celle qui fonctionne le mieux en Brawl Ball...',
+                'author' => 'TeamBuilder',
+                'category' => 'team',
+                'created_at' => '2024-01-14 15:15:00',
+                'comments_count' => 28,
+                'views' => 142,
+                'likes' => 41
+            ],
+            [
+                'id' => 8,
+                'title' => 'Collection de skins rares',
+                'content' => 'Voici ma collection de skins les plus rares du jeu. Certains ne sont plus disponibles...',
+                'author' => 'Collector',
+                'category' => 'skins',
+                'created_at' => '2024-01-14 14:00:00',
+                'comments_count' => 51,
+                'views' => 287,
+                'likes' => 89
+            ]
+        ];
+        
+        // Ajouter les posts de l'utilisateur s'ils existent
+        if (isset($_SESSION['user_posts'])) {
+            $allPosts = array_merge($allPosts, $_SESSION['user_posts']);
+        }
+        
+        // Filtrer par recherche si fournie
+        if (!empty($search)) {
+            $allPosts = array_filter($allPosts, function($post) use ($search) {
+                return stripos($post['title'], $search) !== false || 
+                       stripos($post['content'], $search) !== false ||
+                       stripos($post['author'], $search) !== false;
+            });
+        }
+        
+        // Trier par date de création (plus récent en premier)
+        usort($allPosts, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+        
+        return $allPosts;
+    }
+    
+    // Obtenir les posts par catégorie
+    public function getPostsByCategory($category, $search = '') {
+        $allPosts = $this->getAllPosts($search);
+        
+        return array_filter($allPosts, function($post) use ($category) {
+            return $post['category'] === $category;
+        });
+    }
 }
 
 // Classe utilitaire
@@ -298,6 +490,13 @@ $postManager = new PostManager();
 // Vérification de la connexion pour les pages protégées
 function requireLogin() {
     global $userManager;
+    
+    // Éviter les boucles de redirection
+    $currentPage = basename($_SERVER['PHP_SELF']);
+    if ($currentPage === 'login.php' || $currentPage === 'register.php') {
+        return;
+    }
+    
     if (!$userManager->isLoggedIn()) {
         Utils::redirect('login.php');
     }
