@@ -30,6 +30,7 @@ $flashMessage = getFlashMessage();
             <a href="index.php" class="nav-link active">Accueil</a>
             <a href="posts.php" class="nav-link">Tous les posts</a>
             <a href="add-post.php" class="nav-link">Ajouter un post</a>
+            <a href="events.php" class="nav-link">Événements</a>
         </div>
         
         <!-- Logo Central -->

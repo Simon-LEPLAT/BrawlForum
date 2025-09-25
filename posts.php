@@ -405,6 +405,7 @@ $categories = [
             <a href="index.php" class="nav-link">Accueil</a>
             <a href="posts.php" class="nav-link active">Tous les posts</a>
             <a href="add-post.php" class="nav-link">Ajouter un post</a>
+            <a href="events.php" class="nav-link">Événements</a>
         </div>
         
         <!-- Logo Central -->

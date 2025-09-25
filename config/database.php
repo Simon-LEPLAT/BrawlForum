@@ -271,7 +271,7 @@ class UserManager {
     }
     
     // Mettre à jour le profil utilisateur
-    public function updateProfile($userId, $username, $email, $avatar = null, $newPassword = null) {
+    public function updateProfile($userId, $username, $email, $avatar = null, $newPassword = null, $brawlStarsId = null) {
         $conn = $this->db->getConnection();
         
         if (!$conn) {
@@ -280,6 +280,9 @@ class UserManager {
             $_SESSION['email'] = $email;
             if ($avatar) {
                 $_SESSION['avatar'] = $avatar;
+            }
+            if ($brawlStarsId !== null) {
+                $_SESSION['brawl_stars_id'] = $brawlStarsId;
             }
             return ['success' => true, 'message' => 'Profil mis à jour (mode hors ligne)'];
         }
@@ -296,11 +299,11 @@ class UserManager {
             // Préparer la requête de mise à jour
             if ($newPassword) {
                 $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $sql = "UPDATE users SET username = ?, email = ?, avatar = ?, password = ? WHERE id = ?";
-                $params = [$username, $email, $avatar, $hashedPassword, $userId];
+                $sql = "UPDATE users SET username = ?, email = ?, avatar = ?, brawl_stars_id = ?, password = ? WHERE id = ?";
+                $params = [$username, $email, $avatar, $brawlStarsId, $hashedPassword, $userId];
             } else {
-                $sql = "UPDATE users SET username = ?, email = ?, avatar = ? WHERE id = ?";
-                $params = [$username, $email, $avatar, $userId];
+                $sql = "UPDATE users SET username = ?, email = ?, avatar = ?, brawl_stars_id = ? WHERE id = ?";
+                $params = [$username, $email, $avatar, $brawlStarsId, $userId];
             }
             
             $stmt = $conn->prepare($sql);
@@ -311,6 +314,9 @@ class UserManager {
                 $_SESSION['email'] = $email;
                 if ($avatar) {
                     $_SESSION['avatar'] = $avatar;
+                }
+                if ($brawlStarsId !== null) {
+                    $_SESSION['brawl_stars_id'] = $brawlStarsId;
                 }
                 
                 $message = $newPassword ? 'Profil et mot de passe mis à jour avec succès !' : 'Profil mis à jour avec succès !';

@@ -17,14 +17,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $newUsername = Utils::sanitize($_POST['username'] ?? '');
     $newEmail = Utils::sanitize($_POST['email'] ?? '');
     $newAvatar = $_POST['avatar'] ?? '';
+    $newBrawlStarsId = Utils::sanitize($_POST['brawl_stars_id'] ?? '');
     $currentPassword = $_POST['current_password'] ?? '';
     $newPassword = $_POST['new_password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     $csrf_token = $_POST['csrf_token'] ?? '';
     
+    // Validation de l'ID Brawl Stars
+    $brawlStarsIdError = '';
+    if (!empty($newBrawlStarsId)) {
+        require_once 'config/BrawlStarsAPI.php';
+        if (!BrawlStarsAPI::isValidPlayerTag($newBrawlStarsId)) {
+            $brawlStarsIdError = 'Format d\'ID Brawl Stars invalide. Utilisez le format #2PP ou 2PP avec des caractères alphanumériques (0-9, A-Z).';
+        } else {
+            // Formater l'ID correctement
+            $newBrawlStarsId = BrawlStarsAPI::formatPlayerTag($newBrawlStarsId);
+        }
+    }
+    
     // Vérification du token CSRF
     if (!Utils::verifyCSRFToken($csrf_token)) {
         $error = 'Token de sécurité invalide.';
+    } elseif (!empty($brawlStarsIdError)) {
+        $error = $brawlStarsIdError;
     } elseif (empty($newUsername) || empty($newEmail)) {
         $error = 'Le nom d\'utilisateur et l\'email sont obligatoires.';
     } elseif (!filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
@@ -42,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             $newUsername, 
             $newEmail, 
             $newAvatar, 
-            !empty($newPassword) ? $newPassword : null
+            !empty($newPassword) ? $newPassword : null,
+            $newBrawlStarsId
         );
         
         if ($updateResult['success']) {
@@ -350,6 +366,7 @@ $csrf_token = Utils::generateCSRFToken();
             <a href="index.php" class="nav-link">Accueil</a>
             <a href="posts.php" class="nav-link">Tous les posts</a>
             <a href="add-post.php" class="nav-link">Ajouter un post</a>
+            <a href="events.php" class="nav-link">Événements</a>
         </div>
         
         <!-- Logo Central -->
@@ -432,6 +449,20 @@ $csrf_token = Utils::generateCSRFToken();
                         </label>
                         <input type="email" id="email" name="email" class="form-input" 
                                value="<?= htmlspecialchars($user['email']) ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="brawl_stars_id" class="form-label">
+                            <i class="fas fa-gamepad"></i> ID Brawl Stars
+                        </label>
+                        <input type="text" id="brawl_stars_id" name="brawl_stars_id" class="form-input" 
+                               value="<?= htmlspecialchars($user['brawl_stars_id'] ?? '') ?>" 
+                               placeholder="Ex: #2PP ou 2PP (optionnel)"
+                               pattern="^#?[0-9A-Za-z]{3,9}$"
+                               title="Format valide: #2PP ou 2PP (caractères autorisés: 0-9, A-Z)">
+                        <small style="color: #ccc; font-size: 0.9rem; margin-top: 5px; display: block;">
+                            <i class="fas fa-info-circle"></i> Votre tag de joueur Brawl Stars pour afficher vos statistiques
+                        </small>
                     </div>
                     
                     <div class="form-group">

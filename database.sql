@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role` enum('user','admin') COLLATE utf8mb4_general_ci DEFAULT 'user',
   `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `avatar` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'avatar1',
+  `brawl_stars_id` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `birthdate` date NOT NULL,
   `newsletter` tinyint(1) DEFAULT '0',
   `terms_accepted` tinyint(1) DEFAULT '1',
