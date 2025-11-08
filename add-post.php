@@ -38,6 +38,7 @@ $csrf_token = Utils::generateCSRFToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Créer un post sur BrawlForum : rédigez un titre et un contenu, choisissez une catégorie (stratégies, équipe, skins, événements) et publiez.">
     <title>Brawl Forum - Ajouter un post</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -287,9 +288,9 @@ $csrf_token = Utils::generateCSRFToken();
     <!-- Navigation Header -->
     <nav class="nav-header">
         <div class="nav-links">
-            <a href="index.php" class="nav-link">Accueil</a>
+            <a href="index.php" class="nav-link active">Accueil</a>
             <a href="posts.php" class="nav-link">Tous les posts</a>
-            <a href="add-post.php" class="nav-link" style="color: #ffd700;">Ajouter un post</a>
+            <a href="add-post.php" class="nav-link">Ajouter un post</a>
             <a href="events.php" class="nav-link">Événements</a>
         </div>
         
@@ -299,8 +300,17 @@ $csrf_token = Utils::generateCSRFToken();
         </div>
         
         <div class="nav-links">
-            <a href="profile.php" class="nav-link">Mon profil</a>
-            <a href="logout.php" class="nav-link">Déconnexion</a>
+            <?php if ($currentUser): ?>
+                <a href="profile.php" class="nav-link">Mon profil</a>
+                <?php if ($currentUser['role'] === 'admin'): ?>
+                    <a href="admin.php" class="nav-link">Administration</a>
+                <?php endif; ?>
+                <a href="logout.php" class="nav-link">Déconnexion</a>
+                <span class="user-welcome">Bienvenue, <?= htmlspecialchars($currentUser['username']) ?> !</span>
+            <?php else: ?>
+                <a href="login.php" class="nav-link">Connexion</a>
+                <a href="register.php" class="nav-link">Inscription</a>
+            <?php endif; ?>
         </div>
     </nav>
 

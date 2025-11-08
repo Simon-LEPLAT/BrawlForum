@@ -56,6 +56,7 @@ $categories = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tous les posts Brawl Stars : filtre par catégories, recherche, consultation des discussions et commentaires sur BrawlForum.">
     <title>Brawl Forum - Tous les posts</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -403,8 +404,8 @@ $categories = [
     <!-- Navigation Header -->
     <nav class="nav-header">
         <div class="nav-links">
-            <a href="index.php" class="nav-link">Accueil</a>
-            <a href="posts.php" class="nav-link active">Tous les posts</a>
+            <a href="index.php" class="nav-link active">Accueil</a>
+            <a href="posts.php" class="nav-link">Tous les posts</a>
             <a href="add-post.php" class="nav-link">Ajouter un post</a>
             <a href="events.php" class="nav-link">Événements</a>
         </div>
@@ -417,6 +418,9 @@ $categories = [
         <div class="nav-links">
             <?php if ($currentUser): ?>
                 <a href="profile.php" class="nav-link">Mon profil</a>
+                <?php if ($currentUser['role'] === 'admin'): ?>
+                    <a href="admin.php" class="nav-link">Administration</a>
+                <?php endif; ?>
                 <a href="logout.php" class="nav-link">Déconnexion</a>
                 <span class="user-welcome">Bienvenue, <?= htmlspecialchars($currentUser['username']) ?> !</span>
             <?php else: ?>
@@ -425,6 +429,8 @@ $categories = [
             <?php endif; ?>
         </div>
     </nav>
+
+    
     
     <?php if ($flashMessage): ?>
         <div class="flash-message flash-<?= $flashMessage['type'] ?>">
