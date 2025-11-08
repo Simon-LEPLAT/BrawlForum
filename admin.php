@@ -72,6 +72,7 @@ $csrf_token = Utils::generateCSRFToken();
     <title>Brawl Forum - Administration</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
     <style>
         .admin-page {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);

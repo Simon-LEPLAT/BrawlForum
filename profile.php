@@ -91,6 +91,7 @@ $csrf_token = Utils::generateCSRFToken();
     <title>Brawl Forum - Mon Profil</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
     <style>
         .profile-container {
             max-width: 1200px;

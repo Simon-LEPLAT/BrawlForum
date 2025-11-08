@@ -13,6 +13,7 @@ $flashMessage = getFlashMessage();
     <title>Politique de confidentialité - Brawl Forum</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
     <style>
         body {
             background: url('assets/img/background-login.png') no-repeat center center fixed;
