@@ -398,9 +398,47 @@ $categories = [
             font-style: italic;
             padding: 20px;
         }
+        
+        /* Défilement fluide pour les ancres */
+        html { scroll-behavior: smooth; }
+
+        /* Lien d'ancrage retour en haut */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            background: linear-gradient(45deg, #ffcc02, #ffd700);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 999;
+            text-decoration: none;
+        }
+        .back-to-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .back-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body>
+    <!-- Ancre de haut de page -->
+    <div id="top"></div>
     <!-- Navigation Header -->
     <nav class="nav-header">
         <div class="nav-links">
@@ -442,7 +480,7 @@ $categories = [
     <div class="posts-container">
         <!-- En-tête -->
         <div class="posts-header fade-in">
-            <h1 class="brawl-title" style="font-size: 3rem; margin-bottom: 10px; color: #ffd700;">
+            <h1 id="postsTitle" class="brawl-title" style="font-size: 3rem; margin-bottom: 10px; color: #ffd700;">
                 <i class="fas fa-comments"></i> Tous les Posts
             </h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 1.2rem;">
@@ -654,6 +692,31 @@ $categories = [
                     card.style.transform = 'translateY(0)';
                 }, index * 100);
             });
+        });
+    </script>
+
+    <!-- Lien d'ancrage Retour en haut -->
+    <a href="#top" id="backToTop" class="back-to-top" aria-label="Remonter en haut">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <script>
+        // Afficher/Masquer le lien "Retour en haut" en fonction de la visibilité du titre
+        document.addEventListener('DOMContentLoaded', function() {
+            const titleEl = document.getElementById('postsTitle');
+            const backLink = document.getElementById('backToTop');
+            if (!titleEl || !backLink) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        backLink.classList.remove('show');
+                    } else {
+                        backLink.classList.add('show');
+                    }
+                });
+            }, { root: null, threshold: 0 });
+            observer.observe(titleEl);
         });
     </script>
 </body>
