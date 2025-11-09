@@ -23,7 +23,7 @@ $flashMessage = getFlashMessage();
     <title>Brawl Forum - Accueil</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
+    <link rel="icon" href="assets/img/favicon.png" type="image/png">
 </head>
 <body>
     <!-- Navigation Header -->
@@ -76,28 +76,28 @@ $flashMessage = getFlashMessage();
             
             <div class="categories-grid">
                 <!-- Stratégies -->
-                <div class="category-card strategies" onclick="filterByCategory('strategies')">
+                <a class="category-card strategies" href="posts.php?category=strategies" aria-label="Voir Stratégies dans Tous les posts">
                     <i class="fas fa-chess category-icon"></i>
                     <h3 class="category-title">Stratégies</h3>
-                </div>
+                </a>
                 
                 <!-- Équipe -->
-                <div class="category-card team" onclick="filterByCategory('team')">
+                <a class="category-card team" href="posts.php?category=team" aria-label="Voir Équipe dans Tous les posts">
                     <i class="fas fa-users category-icon"></i>
                     <h3 class="category-title">Équipe</h3>
-                </div>
+                </a>
                 
                 <!-- Skins -->
-                <div class="category-card skins" onclick="filterByCategory('skins')">
+                <a class="category-card skins" href="posts.php?category=skins" aria-label="Voir Skins dans Tous les posts">
                     <i class="fas fa-palette category-icon"></i>
                     <h3 class="category-title">Skins</h3>
-                </div>
+                </a>
                 
                 <!-- Événements -->
-                <div class="category-card events" onclick="filterByCategory('events')">
+                <a class="category-card events" href="posts.php?category=events" aria-label="Voir Événements dans Tous les posts">
                     <i class="fas fa-calendar-alt category-icon"></i>
                     <h3 class="category-title">Événements</h3>
-                </div>
+                </a>
             </div>
         </div>
 
@@ -109,6 +109,7 @@ $flashMessage = getFlashMessage();
             
             <div class="discussions-list">
                 <?php foreach ($recentDiscussions as $discussion): ?>
+                    <a href="posts.php#post-<?= $discussion['id'] ?>" class="discussion-link" aria-label="Voir la discussion">
                     <div class="discussion-item fade-in">
                         <div class="discussion-avatar">
                             <img src="<?= $discussion['avatar'] ?? 'https://cdn.brawlstats.com/player-icons/28000000.png' ?>" alt="Avatar">
@@ -127,10 +128,22 @@ $flashMessage = getFlashMessage();
                             <span><?= $discussion['replies'] ?></span>
                         </div>
                     </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </div>
     </div>
+
+    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
+        <div class="footer-container">
+            <div class="footer-brand">BrawlForum</div>
+            <div class="footer-links">
+                <a href="privacy.php" class="footer-link" aria-label="Politique de confidentialité">Confidentialité</a>
+                <a href="terms.php" class="footer-link" aria-label="Conditions d'utilisation">Conditions</a>
+            </div>
+            <div class="footer-copy">© <?= date('Y') ?> BrawlForum. Tous droits réservés.</div>
+        </div>
+    </footer>
 
     <script src="assets/js/main.js"></script>
 </body>

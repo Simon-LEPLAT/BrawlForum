@@ -564,6 +564,8 @@ class PostManager {
                 } else {
                     $lastActivity = 'À l\'instant';
                 }
+                // Compter les commentaires réels pour ce post
+                $commentsCount = $this->getCommentsCount($post['id']);
                 
                 $formattedPosts[] = [
                     'id' => $post['id'],
@@ -571,13 +573,13 @@ class PostManager {
                     'content' => $post['content'],
                     'author' => $post['author'],
                     'category' => $post['category_slug'],
-                    'replies' => 0, // TODO: compter les commentaires
+                    'replies' => (int)$commentsCount,
                     'last_activity' => $lastActivity,
                     'avatar' => 'assets/img/' . $post['avatar'] . '.svg',
                     'views' => $post['views'],
                     'likes' => $post['likes'],
                     'created_at' => $post['created_at'],
-                    'comments_count' => 0 // TODO: compter les commentaires
+                    'comments_count' => (int)$commentsCount
                 ];
             }
             

@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $csrf_token = Utils::generateCSRFToken();
 ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -41,248 +42,9 @@ $csrf_token = Utils::generateCSRFToken();
     <meta name="description" content="Créer un post sur BrawlForum : rédigez un titre et un contenu, choisissez une catégorie (stratégies, équipe, skins, événements) et publiez.">
     <title>Brawl Forum - Ajouter un post</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/add_post.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
-    <style>
-        .add-post-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .add-post-panel {
-            background: rgba(0,0,0,0.3);
-            border-radius: 25px;
-            padding: 40px;
-            border: 4px solid #000;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-        }
-        
-        .page-title {
-            font-size: 3rem;
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 40px;
-            text-shadow: 3px 3px 0px #000;
-        }
-        
-        .form-group {
-            margin-bottom: 30px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #ffd700;
-            text-transform: uppercase;
-            text-shadow: 1px 1px 0px #000;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 20px;
-            border: 4px solid #000;
-            border-radius: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #4a90e2, #357abd);
-            color: white;
-            transition: all 0.3s;
-        }
-        
-        .form-input::placeholder {
-            color: rgba(255,255,255,0.7);
-            font-weight: normal;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            background: linear-gradient(135deg, #5ba0f2, #4080cd);
-            box-shadow: 0 0 15px rgba(255,215,0,0.5);
-        }
-        
-        .form-textarea {
-            min-height: 150px;
-            resize: vertical;
-            font-family: Arial, sans-serif;
-        }
-        
-        .category-select {
-            position: relative;
-        }
-        
-        .select-wrapper {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
-        
-        .form-select {
-            width: 100%;
-            padding: 20px;
-            border: 4px solid #000;
-            border-radius: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #4a90e2, #357abd);
-            color: white;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-        }
-        
-        .select-wrapper::after {
-            content: '▼';
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #ffd700;
-            font-size: 1.2rem;
-            pointer-events: none;
-        }
-        
-        .form-select option {
-            background: #2a5298;
-            color: white;
-            padding: 10px;
-        }
-        
-        .category-preview {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .category-badge {
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            border: 2px solid #000;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 0.6;
-        }
-        
-        .category-badge.strategies {
-            background: linear-gradient(45deg, #8e44ad, #6a1b9a);
-            color: white;
-        }
-        
-        .category-badge.team {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            color: white;
-        }
-        
-        .category-badge.skins {
-            background: linear-gradient(45deg, #f39c12, #e67e22);
-            color: white;
-        }
-        
-        .category-badge.events {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-        }
-        
-        .category-badge.selected {
-            opacity: 1;
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 40px;
-        }
-        
-        .btn-publish {
-            background: linear-gradient(45deg, #ff8c00, #ff6b35);
-            color: white;
-            padding: 20px 40px;
-            font-size: 1.5rem;
-            border: 4px solid #000;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: 900;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            box-shadow: 0 6px 0 #000;
-        }
-        
-        .btn-publish:active {
-            transform: translateY(3px);
-            box-shadow: 0 3px 0 #000;
-        }
-        
-        .btn-cancel {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-            color: white;
-            padding: 20px 40px;
-            font-size: 1.5rem;
-            border: 4px solid #000;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: 900;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            box-shadow: 0 6px 0 #000;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn-cancel:active {
-            transform: translateY(3px);
-            box-shadow: 0 3px 0 #000;
-        }
-        
-        .success-message {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            border: 3px solid #000;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .error-messages {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            border: 3px solid #000;
-            font-weight: bold;
-        }
-        
-        @media (max-width: 768px) {
-            .add-post-panel {
-                padding: 20px;
-            }
-            
-            .page-title {
-                font-size: 2rem;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn-publish,
-            .btn-cancel {
-                width: 100%;
-                text-align: center;
-            }
-        }
-    </style>
+    <link rel="icon" href="assets/img/favicon.png" type="image/png">
 </head>
 <body>
     <!-- Navigation Header -->
@@ -457,5 +219,16 @@ $csrf_token = Utils::generateCSRFToken();
             });
         });
     </script>
+
+    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
+        <div class="footer-container">
+            <div class="footer-brand">BrawlForum</div>
+            <div class="footer-links">
+                <a href="privacy.php" class="footer-link" aria-label="Politique de confidentialité">Confidentialité</a>
+                <a href="terms.php" class="footer-link" aria-label="Conditions d'utilisation">Conditions</a>
+            </div>
+            <div class="footer-copy">© <?= date('Y') ?> BrawlForum. Tous droits réservés.</div>
+        </div>
+    </footer>
 </body>
 </html>

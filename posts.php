@@ -59,382 +59,9 @@ $categories = [
     <meta name="description" content="Tous les posts Brawl Stars : filtre par catégories, recherche, consultation des discussions et commentaires sur BrawlForum.">
     <title>Brawl Forum - Tous les posts</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/posts.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" href="assets/img/favicon.png" type="image/png" />
-    <style>
-        .posts-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .posts-header {
-            background: rgba(0,0,0,0.3);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border: 3px solid #000;
-            text-align: center;
-        }
-        
-        .filters-section {
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 2px solid #000;
-        }
-        
-        .category-filters {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .filter-btn {
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            color: white;
-            border: 2px solid #000;
-            border-radius: 25px;
-            padding: 10px 20px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-        }
-        
-        .filter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
-        }
-        
-        .filter-btn.active {
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #000;
-        }
-        
-        .search-box {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .search-input {
-            background: rgba(255,255,255,0.1);
-            border: 2px solid #000;
-            border-radius: 25px;
-            padding: 12px 20px;
-            color: white;
-            font-size: 1rem;
-            width: 300px;
-            max-width: 100%;
-        }
-        
-        .search-input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .search-btn {
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            color: white;
-            border: 2px solid #000;
-            border-radius: 25px;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        
-        .search-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .posts-grid {
-            display: grid;
-            gap: 20px;
-        }
-        
-        .post-card {
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 25px;
-            border: 2px solid #000;
-            transition: all 0.3s ease;
-        }
-        
-        .post-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        
-        .post-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .post-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            border: 2px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .post-meta {
-            flex: 1;
-        }
-        
-        .post-author {
-            font-weight: bold;
-            color: #ffd700;
-            font-size: 1.1rem;
-        }
-        
-        .post-date {
-            color: rgba(255,255,255,0.7);
-            font-size: 0.9rem;
-        }
-        
-        .post-category {
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            border: 1px solid #000;
-        }
-        
-        .post-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #ffd700;
-            margin-bottom: 10px;
-            text-decoration: none;
-        }
-        
-        .post-title:hover {
-            color: #ffed4e;
-        }
-        
-        .post-content {
-            color: white;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-        
-        .post-stats {
-            display: flex;
-            gap: 20px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.9rem;
-        }
-        
-        .post-stat {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .no-posts {
-            text-align: center;
-            color: rgba(255,255,255,0.7);
-            font-size: 1.2rem;
-            padding: 50px;
-        }
-        
-        /* Styles pour les commentaires */
-        .comments-toggle {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .comments-toggle:hover {
-            color: #ffd700 !important;
-            transform: scale(1.05);
-        }
-        
-        .comments-section {
-            display: none;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid rgba(255,255,255,0.2);
-        }
-        
-        .comments-section.expanded {
-            display: block;
-            animation: slideDown 0.3s ease;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                max-height: 0;
-            }
-            to {
-                opacity: 1;
-                max-height: 1000px;
-            }
-        }
-        
-        .comment-item {
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .comment-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .comment-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            border: 2px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .comment-meta {
-            flex: 1;
-        }
-        
-        .comment-author {
-            font-weight: bold;
-            color: #ffd700;
-            font-size: 0.9rem;
-        }
-        
-        .comment-date {
-            color: rgba(255,255,255,0.6);
-            font-size: 0.8rem;
-        }
-        
-        .comment-content {
-            color: white;
-            line-height: 1.5;
-            margin-left: 45px;
-        }
-        
-        .comment-form {
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .comment-form h4 {
-            color: #ffd700;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        
-        .comment-textarea {
-            width: 100%;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-            padding: 12px;
-            color: white;
-            font-size: 0.9rem;
-            resize: vertical;
-            min-height: 80px;
-            margin-bottom: 15px;
-        }
-        
-        .comment-textarea::placeholder {
-            color: rgba(255,255,255,0.5);
-        }
-        
-        .comment-textarea:focus {
-            outline: none;
-            border-color: #ffd700;
-        }
-        
-        .comment-submit {
-            background: linear-gradient(45deg, #ff6b35, #ff4444);
-            color: white;
-            border: 2px solid #000;
-            border-radius: 25px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-        
-        .comment-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
-        }
-        
-        .no-comments {
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-style: italic;
-            padding: 20px;
-        }
-        
-        /* Défilement fluide pour les ancres */
-        html { scroll-behavior: smooth; }
-
-        /* Lien d'ancrage retour en haut */
-        .back-to-top {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            border: 2px solid #000;
-            background: linear-gradient(45deg, #ffcc02, #ffd700);
-            color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.35);
-            cursor: pointer;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            z-index: 999;
-            text-decoration: none;
-        }
-        .back-to-top.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .back-to-top:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-        }
-    </style>
+    <link rel="icon" href="assets/img/favicon.png" type="image/png">
 </head>
 <body>
     <!-- Ancre de haut de page -->
@@ -518,7 +145,7 @@ $categories = [
                 </div>
             <?php else: ?>
                 <?php foreach ($posts as $post): ?>
-                    <div class="post-card">
+                    <div class="post-card" id="post-<?= $post['id'] ?>">
                         <div class="post-header">
                             <div class="post-avatar">
                                 <?= strtoupper(substr($post['author'], 0, 1)) ?>
@@ -531,7 +158,7 @@ $categories = [
                         </div>
                         
                         <h3 class="post-title">
-                            <a href="post.php?id=<?= $post['id'] ?>" style="color: inherit; text-decoration: none;">
+                            <a href="posts.php#post-<?= $post['id'] ?>" style="color: inherit; text-decoration: none;">
                                 <?= htmlspecialchars($post['title']) ?>
                             </a>
                         </h3>
@@ -539,7 +166,7 @@ $categories = [
                         <div class="post-content">
                             <?= nl2br(htmlspecialchars(substr($post['content'], 0, 200))) ?>
                             <?php if (strlen($post['content']) > 200): ?>
-                                <a href="post.php?id=<?= $post['id'] ?>" style="color: #ffd700;">... Lire la suite</a>
+                                <a href="posts.php#post-<?= $post['id'] ?>" style="color: #ffd700;">... Lire la suite</a>
                             <?php endif; ?>
                         </div>
                         
@@ -616,6 +243,17 @@ $categories = [
             <?php endif; ?>
         </div>
     </div>
+
+    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
+        <div class="footer-container">
+            <div class="footer-brand">BrawlForum</div>
+            <div class="footer-links">
+                <a href="privacy.php" class="footer-link" aria-label="Politique de confidentialité">Confidentialité</a>
+                <a href="terms.php" class="footer-link" aria-label="Conditions d'utilisation">Conditions</a>
+            </div>
+            <div class="footer-copy">© <?= date('Y') ?> BrawlForum. Tous droits réservés.</div>
+        </div>
+    </footer>
 
     <script src="assets/js/main.js"></script>
     <script>
@@ -695,6 +333,31 @@ $categories = [
         });
     </script>
 
+    <script>
+        // Si on arrive avec un hash (#post-123) ou ?post_id=123, scroller et ouvrir les commentaires
+        document.addEventListener('DOMContentLoaded', function() {
+            let targetId = null;
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#post-')) {
+                targetId = hash.replace('#post-', '');
+            } else {
+                const params = new URLSearchParams(window.location.search);
+                const pid = params.get('post_id');
+                if (pid) targetId = pid;
+            }
+
+            if (targetId) {
+                const card = document.getElementById('post-' + targetId);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(() => toggleComments(targetId), 200);
+                }
+            }
+        });
+    </script>
+
+    
+
     <!-- Lien d'ancrage Retour en haut -->
     <a href="#top" id="backToTop" class="back-to-top" aria-label="Remonter en haut">
         <i class="fas fa-arrow-up"></i>
@@ -719,5 +382,7 @@ $categories = [
             observer.observe(titleEl);
         });
     </script>
+
+
 </body>
 </html>

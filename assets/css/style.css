@@ -128,6 +128,13 @@ body:not(.login-page):not(.register-page) {
     color: #ffd700;
 }
 
+/* Liens cliquables pour les discussions (accueil) */
+.discussion-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
 /* Boutons Brawl Stars */
 .btn {
     padding: 15px 30px;
@@ -922,5 +929,71 @@ body:not(.login-page):not(.register-page) {
     
     .avatar-name {
         font-size: 0.8rem;
+    }
+}
+
+/* ===== FOOTER GLOBAL ===== */
+.site-footer {
+    margin-top: 60px;
+    background: linear-gradient(135deg, #162b63 0%, #0f1f44 100%);
+    border-top: 4px solid #000;
+    box-shadow: 0 -8px 0 #000;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: center;
+}
+
+.footer-brand {
+    color: #ffd700;
+    font-weight: 900;
+    font-size: 1.3rem;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.footer-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 10px 16px;
+    border: 3px solid #000;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #357abd, #4a90e2);
+    box-shadow: 0 6px 0 #000;
+    transition: all 0.25s ease;
+}
+
+.footer-link:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 #000;
+}
+
+.footer-copy {
+    text-align: right;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    .footer-copy {
+        text-align: center;
+        margin-top: 10px;
     }
 }
