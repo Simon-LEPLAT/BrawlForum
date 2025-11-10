@@ -7,9 +7,8 @@ require_once 'config/api_config.php';
 requireLogin();
 
 // Obtenir les données de l'utilisateur connecté
-$currentUser = $userManager->getCurrentUser();
-$flashMessage = getFlashMessage();
 $user = $userManager->getCurrentUser();
+$flashMessage = getFlashMessage();
 
 // Initialiser l'API Brawl Stars
 $brawlAPI = new BrawlStarsAPI(BRAWL_STARS_API_KEY);
@@ -78,21 +77,255 @@ $csrf_token = Utils::generateCSRFToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Brawl Stars — Événements et statistiques : rotation des modes et cartes, connectez votre ID pour afficher vos stats sur BrawlForum.">
     <title>Brawl Forum - Événements & Statistiques</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/events.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" href="assets/img/favicon.png" type="image/png">
+    <style>
+        .events-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .page-header {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 3px solid #000;
+            text-align: center;
+        }
+        
+        .page-title {
+            font-size: 3rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0px #000;
+        }
+        
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+        }
+        
+        .events-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stats-section, .events-section {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 30px;
+            border: 3px solid #000;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 25px;
+            text-align: center;
+            text-shadow: 2px 2px 0px #000;
+        }
+        
+        .no-id-message {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 15px;
+            border: 2px solid #ff6b35;
+            margin-bottom: 20px;
+        }
+        
+        .no-id-message i {
+            font-size: 3rem;
+            color: #ff6b35;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .brawl-id-form {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #000;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .btn-update {
+            background: linear-gradient(45deg, #ff6b35, #ff4444);
+            color: white;
+            border: 2px solid #000;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+        }
+        
+        .btn-update:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #333;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            border-color: #ffd700;
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #ccc;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .player-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .player-name {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .player-tag {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+        
+        .event-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid #333;
+            transition: all 0.3s ease;
+        }
+        
+        .event-item:hover {
+            border-color: #ffd700;
+            transform: translateX(10px);
+        }
+        
+        .event-mode {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        
+        .event-map {
+            color: #ccc;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        
+        .event-time {
+            color: #ff6b35;
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid #ff4444;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #ff4444;
+            text-align: center;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Header -->
     <nav class="nav-header">
         <div class="nav-links">
-            <a href="index.php" class="nav-link active">Accueil</a>
+            <a href="index.php" class="nav-link">Accueil</a>
             <a href="posts.php" class="nav-link">Tous les posts</a>
             <a href="add-post.php" class="nav-link">Ajouter un post</a>
-            <a href="events.php" class="nav-link">Événements</a>
+            <a href="events.php" class="nav-link active">Événements</a>
         </div>
         
         <!-- Logo Central -->
@@ -101,13 +334,13 @@ $csrf_token = Utils::generateCSRFToken();
         </div>
         
         <div class="nav-links">
-            <?php if ($currentUser): ?>
+            <?php if ($user): ?>
                 <a href="profile.php" class="nav-link">Mon profil</a>
-                <?php if ($currentUser['role'] === 'admin'): ?>
+                <?php if ($user['role'] === 'admin'): ?>
                     <a href="admin.php" class="nav-link">Administration</a>
                 <?php endif; ?>
                 <a href="logout.php" class="nav-link">Déconnexion</a>
-                <span class="user-welcome">Bienvenue, <?= htmlspecialchars($currentUser['username']) ?> !</span>
+                <span class="user-welcome">Bienvenue, <?= htmlspecialchars($user['username']) ?> !</span>
             <?php else: ?>
                 <a href="login.php" class="nav-link">Connexion</a>
                 <a href="register.php" class="nav-link">Inscription</a>
@@ -292,17 +525,6 @@ $csrf_token = Utils::generateCSRFToken();
         </div>
     </div>
     
-    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
-        <div class="footer-container">
-            <div class="footer-brand">BrawlForum</div>
-            <div class="footer-links">
-                <a href="privacy.php" class="footer-link" aria-label="Politique de confidentialité">Confidentialité</a>
-                <a href="terms.php" class="footer-link" aria-label="Conditions d'utilisation">Conditions</a>
-            </div>
-            <div class="footer-copy">© <?= date('Y') ?> BrawlForum. Tous droits réservés.</div>
-        </div>
-    </footer>
-
     <script>
         // Animation d'apparition
         document.addEventListener('DOMContentLoaded', function() {
